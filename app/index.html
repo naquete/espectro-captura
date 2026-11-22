@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob: mediastream:">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espectro Captura</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<video id="video" autoplay playsinline muted disablepictureinpicture></video>
+
+<div id="mensagem" class="mensagem" hidden>
+  <p id="mensagem-texto">Procurando a placa de captura...</p>
+  <button id="mensagem-acao" class="botao" type="button" hidden>Tentar de novo</button>
+</div>
+
+<div id="osd" class="osd" hidden></div>
+
+<div id="barra" class="barra">
+  <button id="mudo" class="icone" type="button" title="Mudo (M)" aria-label="Mudo">
+    <svg class="i-som" viewBox="0 0 24 24"><path d="M15 8a5 5 0 0 1 0 8M17.7 5a9 9 0 0 1 0 14M6 15h-2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5a.8.8 0 0 1 1.5.5v14a.8.8 0 0 1-1.5.5l-3.5-4.5"/></svg>
+    <svg class="i-mudo" viewBox="0 0 24 24"><path d="M6 15h-2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5a.8.8 0 0 1 1.5.5v14a.8.8 0 0 1-1.5.5l-3.5-4.5M16 10l4 4m0-4l-4 4"/></svg>
+  </button>
+  <input id="volume" type="range" min="0" max="200" step="1" value="100" aria-label="Volume">
+  <span id="volume-num" class="num">100%</span>
+  <span class="espaco"></span>
+  <span id="info" class="info"></span>
+  <button id="ajustes" class="icone" type="button" title="Ajustes" aria-label="Ajustes">
+    <svg viewBox="0 0 24 24"><path d="M12 6a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4 6h8M16 6h4M6 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4 12h2M10 12h10M15 18a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4 18h11M19 18h1"/></svg>
+  </button>
+  <button id="tela-cheia" class="icone" type="button" title="Tela cheia (F)" aria-label="Tela cheia">
+    <svg viewBox="0 0 24 24"><path d="M4 8v-2a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v2M16 20h2a2 2 0 0 0 2-2v-2"/></svg>
+  </button>
+</div>
+
+<aside id="painel" class="painel" hidden>
+  <h2>Ajustes</h2>
+  <label>Imagem (placa de captura)<select id="sel-video"></select></label>
+  <label>Som da placa<select id="sel-audio"></select></label>
+  <label>Tocar o som em<select id="sel-saida"></select></label>
+  <label>Qualidade
+    <select id="sel-qualidade">
+      <option value="1080p60">1080p a 60 fps</option>
+      <option value="1080p30">1080p a 30 fps</option>
+      <option value="720p60">720p a 60 fps</option>
+      <option value="2160p30">4K a 30 fps</option>
+    </select>
+  </label>
+  <label>Encaixe da imagem
+    <select id="sel-encaixe">
+      <option value="contain">Imagem inteira (barras pretas se precisar)</option>
+      <option value="cover">Preencher a janela (corta as bordas)</option>
+    </select>
+  </label>
+  <p class="dica">Atalhos: M mudo · setas para cima e para baixo ou a roda do mouse mudam o volume · F ou duplo clique para tela cheia.</p>
+  <button id="fechar-painel" class="botao" type="button">Fechar</button>
+</aside>
+
+<script src="app.js"></script>
+</body>
+</html>

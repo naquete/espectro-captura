@@ -1,0 +1,34 @@
+{
+  "name": "espectro-captura",
+  "productName": "Espectro Captura",
+  "version": "1.0.0",
+  "description": "Ver e ouvir a placa de captura (Elgato) com controle de volume de verdade.",
+  "author": "João Flávio de Souza",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "instalador": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "45.4.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "br.com.espectrosolucoes.captura",
+    "productName": "Espectro Captura",
+    "copyright": "Espectro Soluções",
+    "files": ["main.js", "preload.js", "app/**/*"],
+    "win": { "target": "nsis", "icon": "build/icone.png" },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Espectro Captura"
+    }
+  }
+}
+

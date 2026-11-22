@@ -15,26 +15,20 @@
     var lb = String(b || '').toLowerCase();
     return pa.filter(function (p) { return lb.indexOf(p) >= 0; }).length;
   }
-  // Qualidades possíveis; a lista mostrada é filtrada pelo que a placa conectada diz que aceita
+  // Qualidades: a lista inteira aparece sempre (pedido do João, 22/11/2026: quem tem a placa sabe o que ela aguenta);
+  // se a placa não fizer a combinação escolhida, ela entrega a mais próxima e o app avisa o que chegou
   var QUALIDADES = {
     '2160p60': [3840, 2160, 60, '4K a 60 fps'], '2160p30': [3840, 2160, 30, '4K a 30 fps'],
     '1440p120': [2560, 1440, 120, '1440p a 120 fps'], '1440p60': [2560, 1440, 60, '1440p a 60 fps'], '1440p30': [2560, 1440, 30, '1440p a 30 fps'],
     '1080p240': [1920, 1080, 240, '1080p a 240 fps'], '1080p120': [1920, 1080, 120, '1080p a 120 fps'], '1080p60': [1920, 1080, 60, '1080p a 60 fps'], '1080p30': [1920, 1080, 30, '1080p a 30 fps'],
     '720p60': [1280, 720, 60, '720p a 60 fps'],
   };
-  function preencherQualidades(trilha) {
-    var cap = trilha && trilha.getCapabilities ? trilha.getCapabilities() : {};
-    var maxL = cap.width && cap.width.max || 3840, maxA = cap.height && cap.height.max || 2160, maxF = cap.frameRate && cap.frameRate.max || 60;
+  function preencherQualidades() {
     var sel = $('sel-qualidade'); sel.textContent = '';
     Object.keys(QUALIDADES).forEach(function (k) {
-      var q = QUALIDADES[k];
-      if (q[0] > maxL || q[1] > maxA || q[2] > Math.round(maxF)) return;
-      var o = document.createElement('option'); o.value = k; o.textContent = q[3]; sel.appendChild(o);
+      var o = document.createElement('option'); o.value = k; o.textContent = QUALIDADES[k][3]; sel.appendChild(o);
     });
-    if (!sel.querySelector('option[value="' + pref.qualidade + '"]')) {
-      var o = document.createElement('option'); o.value = pref.qualidade; o.textContent = (QUALIDADES[pref.qualidade] || [0, 0, 0, pref.qualidade])[3]; sel.appendChild(o);
-    }
-    sel.value = pref.qualidade;
+    sel.value = QUALIDADES[pref.qualidade] ? pref.qualidade : '1080p60';
   }
 
   // ---------------------------------------------------------------- preferências
@@ -151,7 +145,7 @@
       preencher($('sel-video'), d.video, cam.deviceId, 'Nenhuma placa encontrada');
       preencher($('sel-audio'), d.audio, mic && mic.deviceId, 'Nenhuma entrada de som');
       preencher($('sel-saida'), [{ deviceId: '', label: 'Padrão do Windows' }].concat(d.saida.filter(function (x) { return x.deviceId !== 'default' && x.deviceId !== 'communications'; })), pref.saida, 'Padrão do Windows');
-      preencherQualidades(streamVideo.getVideoTracks()[0]); $('sel-encaixe').value = pref.encaixe;
+      preencherQualidades(); $('sel-encaixe').value = pref.encaixe;
       mensagem('');
       // primeira vez com mais de uma câmera, ou sem achar o som da placa: abre os Ajustes para a pessoa conferir
       if ((primeiraVez && d.video.length > 1) || !mic) {

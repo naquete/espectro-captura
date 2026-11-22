@@ -31,6 +31,14 @@ function criarJanela() {
   janela.loadFile(path.join(__dirname, 'app', 'index.html'));
   if (TESTE) {
     setTimeout(async () => {
+      // ESPECTRO_CAPTURA_TESTE_QUALIDADE=2160p30: troca a qualidade pelos Ajustes e espera reabrir
+      const q = process.env.ESPECTRO_CAPTURA_TESTE_QUALIDADE;
+      if (q) {
+        const opcoes = await janela.webContents.executeJavaScript("[...document.querySelectorAll('#sel-qualidade option')].map(o => o.value).join(',')");
+        console.log('opcoes: ' + opcoes);
+        await janela.webContents.executeJavaScript(`(() => { const s = document.getElementById('sel-qualidade'); s.value = ${JSON.stringify(q)}; s.dispatchEvent(new Event('change')); })()`);
+        await new Promise((ok) => setTimeout(ok, 5000));
+      }
       const img = await janela.webContents.capturePage();
       require('node:fs').writeFileSync(TESTE, img.toPNG());
       const estado = await janela.webContents.executeJavaScript("({ info: document.getElementById('info').textContent, aviso: document.getElementById('mensagem').hidden ? '' : document.getElementById('mensagem-texto').textContent, largura: document.getElementById('video').videoWidth })");

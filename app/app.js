@@ -15,7 +15,27 @@
     var lb = String(b || '').toLowerCase();
     return pa.filter(function (p) { return lb.indexOf(p) >= 0; }).length;
   }
-  var QUALIDADES = { '1080p60': [1920, 1080, 60], '1080p30': [1920, 1080, 30], '720p60': [1280, 720, 60], '2160p30': [3840, 2160, 30] };
+  // Qualidades possíveis; a lista mostrada é filtrada pelo que a placa conectada diz que aceita
+  var QUALIDADES = {
+    '2160p60': [3840, 2160, 60, '4K a 60 fps'], '2160p30': [3840, 2160, 30, '4K a 30 fps'],
+    '1440p120': [2560, 1440, 120, '1440p a 120 fps'], '1440p60': [2560, 1440, 60, '1440p a 60 fps'], '1440p30': [2560, 1440, 30, '1440p a 30 fps'],
+    '1080p240': [1920, 1080, 240, '1080p a 240 fps'], '1080p120': [1920, 1080, 120, '1080p a 120 fps'], '1080p60': [1920, 1080, 60, '1080p a 60 fps'], '1080p30': [1920, 1080, 30, '1080p a 30 fps'],
+    '720p60': [1280, 720, 60, '720p a 60 fps'],
+  };
+  function preencherQualidades(trilha) {
+    var cap = trilha && trilha.getCapabilities ? trilha.getCapabilities() : {};
+    var maxL = cap.width && cap.width.max || 3840, maxA = cap.height && cap.height.max || 2160, maxF = cap.frameRate && cap.frameRate.max || 60;
+    var sel = $('sel-qualidade'); sel.textContent = '';
+    Object.keys(QUALIDADES).forEach(function (k) {
+      var q = QUALIDADES[k];
+      if (q[0] > maxL || q[1] > maxA || q[2] > Math.round(maxF)) return;
+      var o = document.createElement('option'); o.value = k; o.textContent = q[3]; sel.appendChild(o);
+    });
+    if (!sel.querySelector('option[value="' + pref.qualidade + '"]')) {
+      var o = document.createElement('option'); o.value = pref.qualidade; o.textContent = (QUALIDADES[pref.qualidade] || [0, 0, 0, pref.qualidade])[3]; sel.appendChild(o);
+    }
+    sel.value = pref.qualidade;
+  }
 
   // ---------------------------------------------------------------- preferências
   var pref = { video: '', audio: '', saida: '', qualidade: '1080p60', encaixe: 'contain', volume: 100, mudo: false };
@@ -33,7 +53,7 @@
   }
   function mostrarOsd(texto) {
     osd.textContent = texto; osd.hidden = false;
-    clearTimeout(mostrarOsd.t); mostrarOsd.t = setTimeout(function () { osd.hidden = true; }, 1100);
+    clearTimeout(mostrarOsd.t); mostrarOsd.t = setTimeout(function () { osd.hidden = true; }, texto.length > 20 ? 3500 : 1100);
   }
   function mudarVolume(v, avisar) {
     pref.volume = Math.max(0, Math.min(200, Math.round(v)));
@@ -122,11 +142,16 @@
       pref.video = cam.deviceId; pref.audio = mic ? mic.deviceId : ''; guardar();
       aplicarVolume();
       var trilha = streamVideo.getVideoTracks()[0].getSettings();
+      // a placa informa o máximo de resolução e de fps separados; se a combinação pedida não existir, ela entrega a
+      // mais próxima, e o app avisa o que chegou de verdade
+      if (trilha.height && (trilha.height < q[1] || (trilha.frameRate && Math.round(trilha.frameRate) < q[2] - 1))) {
+        setTimeout(function () { mostrarOsd('A placa entregou ' + trilha.height + 'p a ' + Math.round(trilha.frameRate || 0) + ' fps'); }, 300);
+      }
       $('info').textContent = (cam.label || 'Placa') + ' · ' + trilha.width + 'x' + trilha.height + (trilha.frameRate ? ' · ' + Math.round(trilha.frameRate) + ' fps' : '') + (mic ? '' : ' · sem som');
       preencher($('sel-video'), d.video, cam.deviceId, 'Nenhuma placa encontrada');
       preencher($('sel-audio'), d.audio, mic && mic.deviceId, 'Nenhuma entrada de som');
       preencher($('sel-saida'), [{ deviceId: '', label: 'Padrão do Windows' }].concat(d.saida.filter(function (x) { return x.deviceId !== 'default' && x.deviceId !== 'communications'; })), pref.saida, 'Padrão do Windows');
-      $('sel-qualidade').value = pref.qualidade; $('sel-encaixe').value = pref.encaixe;
+      preencherQualidades(streamVideo.getVideoTracks()[0]); $('sel-encaixe').value = pref.encaixe;
       mensagem('');
       // primeira vez com mais de uma câmera, ou sem achar o som da placa: abre os Ajustes para a pessoa conferir
       if ((primeiraVez && d.video.length > 1) || !mic) {

@@ -1,7 +1,12 @@
 # Espectro Captura
 
-Programa para Windows que mostra e toca a placa de captura (Elgato HD60 X e outras que aparecem como câmera e
-microfone) com controle de volume de verdade, sem OBS. Pedido do João em 22/11/2026.
+Programa para Windows que mostra e toca QUALQUER placa de captura que o Windows reconheça como câmera e microfone
+(Elgato, AVerMedia, Razer, Magewell, Blackmagic, as genéricas "USB3.0 Capture" etc.) com controle de volume de
+verdade, sem OBS. Pedido do João em 22/11/2026 (a dele é uma Elgato HD60 X).
+
+- Escolha automática: a imagem com nome de placa de captura (e nunca uma webcam, se houver outra opção); o som com
+  nome parecido com o da imagem. Sem achar o som da placa, não pega o microfone: abre os Ajustes para a pessoa
+  escolher. Na primeira vez com mais de uma câmera, também abre os Ajustes para conferir.
 
 - Imagem no `<video>` (mudo) e som por Web Audio com ganho próprio: volume de 0 a 200%, mudo, escolha da saída de
   som, sem cancelamento de eco, redução de ruído nem ganho automático.

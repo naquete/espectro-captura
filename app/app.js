@@ -5,7 +5,16 @@
   var $ = function (id) { return document.getElementById(id); };
   var video = $('video'), barra = $('barra'), osd = $('osd');
   var faixa = $('volume'), numero = $('volume-num');
-  var PLACA = /elgato|hd60|game capture|4k60|4k x|cam link|capture/i;
+  // Placas de captura conhecidas (qualquer marca) e o que costuma ser webcam, para não abrir a câmera por engano
+  var PLACA = /capture|captura|elgato|hd60|cam link|avermedia|live gamer|gc5|razer ripsaw|ripsaw|magewell|blackmagic|decklink|intensity|hauppauge|hd pvr|ugreen|genki|shadowcast|evga|xr1|mirabox|j5create|startech|epiphan|yuan|nzxt signal|signal hd|hdmi|usb video|usb3\.?0? video|ms2109|ms2130|uvc capture|video capture/i;
+  var WEBCAM = /webcam|integrated|integrada|facetime|hd camera|hd webcam|front|frontal|rear|traseira|c9[0-9]{2}|brio|kiyo|ir camera|virtual|obs virtual|droidcam|iriun|snap camera/i;
+  function pontos(label) { var l = String(label || ''); return (PLACA.test(l) ? 2 : 0) - (WEBCAM.test(l) ? 3 : 0); }
+  // palavras do nome da imagem que aparecem no nome do som (ex.: "USB3.0 Capture" e "Digital Audio (USB3.0 Capture)")
+  function parecido(a, b) {
+    var pa = String(a || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(function (p) { return p.length > 2 && !/^(usb|video|audio|digital|interface|device|the|and)$/.test(p); });
+    var lb = String(b || '').toLowerCase();
+    return pa.filter(function (p) { return lb.indexOf(p) >= 0; }).length;
+  }
   var QUALIDADES = { '1080p60': [1920, 1080, 60], '1080p30': [1920, 1080, 30], '720p60': [1280, 720, 60], '2160p30': [3840, 2160, 30] };
 
   // ---------------------------------------------------------------- preferências
@@ -56,10 +65,21 @@
       saida: todos.filter(function (d) { return d.kind === 'audiooutput'; }),
     };
   }
-  function escolher(lista, salvo) {
-    return lista.find(function (d) { return d.deviceId === salvo; })
-      || lista.find(function (d) { return PLACA.test(d.label); })
-      || lista[0] || null;
+  // imagem: a salva; senão a de melhor nota (placa conhecida e não webcam); senão a primeira
+  function escolherVideo(lista, salvo) {
+    var s = lista.find(function (d) { return d.deviceId === salvo; });
+    if (s) return s;
+    return lista.slice().sort(function (a, b) { return pontos(b.label) - pontos(a.label); })[0] || null;
+  }
+  // som: o salvo; senão o de nome parecido com a imagem escolhida; senão um com nome de placa; senão nenhum
+  // (melhor sem som do que pegar o microfone da pessoa)
+  function escolherAudio(lista, salvo, cam) {
+    var s = lista.find(function (d) { return d.deviceId === salvo; });
+    if (s) return s;
+    var melhor = lista.map(function (d) { return { d: d, n: parecido(cam && cam.label, d.label) * 3 + pontos(d.label) }; })
+      .filter(function (x) { return x.d.deviceId !== 'default' && x.d.deviceId !== 'communications'; })
+      .sort(function (a, b) { return b.n - a.n; })[0];
+    return melhor && melhor.n > 0 ? melhor.d : null;
   }
   function preencher(sel, lista, atual, vazio) {
     sel.textContent = '';
@@ -80,8 +100,9 @@
         t.getTracks().forEach(function (x) { x.stop(); });
       }
       var d = await listar();
-      var cam = escolher(d.video, pref.video), mic = escolher(d.audio, pref.audio);
-      if (!cam) { mensagem('Não achei nenhuma placa de captura. Confira o cabo USB da Elgato e se ela está ligada.', true); return; }
+      var primeiraVez = !pref.video;
+      var cam = escolherVideo(d.video, pref.video), mic = escolherAudio(d.audio, pref.audio, cam);
+      if (!cam) { mensagem('Não achei nenhuma placa de captura. Confira o cabo USB da placa e se ela está ligada.', true); return; }
       var q = QUALIDADES[pref.qualidade] || QUALIDADES['1080p60'];
       streamVideo = await navigator.mediaDevices.getUserMedia({
         video: { deviceId: { exact: cam.deviceId }, width: { ideal: q[0] }, height: { ideal: q[1] }, frameRate: { ideal: q[2] } },
@@ -107,9 +128,14 @@
       preencher($('sel-saida'), [{ deviceId: '', label: 'Padrão do Windows' }].concat(d.saida.filter(function (x) { return x.deviceId !== 'default' && x.deviceId !== 'communications'; })), pref.saida, 'Padrão do Windows');
       $('sel-qualidade').value = pref.qualidade; $('sel-encaixe').value = pref.encaixe;
       mensagem('');
+      // primeira vez com mais de uma câmera, ou sem achar o som da placa: abre os Ajustes para a pessoa conferir
+      if ((primeiraVez && d.video.length > 1) || !mic) {
+        $('painel').hidden = false;
+        mostrarOsd(!mic ? 'Escolha o som da sua placa em Ajustes' : 'Confira se esta é a sua placa');
+      }
     } catch (e) {
       var msg = e && e.name === 'NotReadableError'
-        ? 'A placa está sendo usada por outro programa (o app da Elgato ou o OBS?). Feche o outro e tente de novo.'
+        ? 'A placa está sendo usada por outro programa (o app da própria placa ou o OBS?). Feche o outro e tente de novo.'
         : 'Não consegui abrir a placa: ' + (e && e.message ? e.message : e);
       mensagem(msg, true);
     }

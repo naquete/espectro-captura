@@ -74,3 +74,17 @@ body.ocioso .barra{opacity:0;transform:translate(-50%,8px);pointer-events:none}
 .painel label.faixa-ajuste{display:grid;grid-template-columns:1fr auto;gap:4px}
 .faixa-ajuste output{opacity:.7;font-variant-numeric:tabular-nums}
 .faixa-ajuste input[type=range]{grid-column:1/-1;width:100%;accent-color:#d4ff3f}
+
+/* chaves de liga e desliga no lugar das caixinhas de marcar */
+.painel .marcar{align-items:center;gap:10px;cursor:pointer}
+.painel .marcar input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:36px;height:20px;margin:0;border-radius:999px;
+  background:#2e2e38;border:1px solid rgba(255,255,255,.14);cursor:pointer;transition:background .18s,border-color .18s}
+.painel .marcar input[type=checkbox]::before{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#c9c9d1;transition:transform .18s,background .18s}
+.painel .marcar input[type=checkbox]:checked{background:#d4ff3f;border-color:#d4ff3f}
+.painel .marcar input[type=checkbox]:checked::before{transform:translateX(16px);background:#111}
+.painel .marcar input[type=checkbox]:focus-visible{outline:2px solid #d4ff3f;outline-offset:2px}
+/* barra de rolagem escura nos ajustes */
+.painel::-webkit-scrollbar{width:8px}
+.painel::-webkit-scrollbar-track{background:transparent}
+.painel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:8px}
+.painel::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3)}

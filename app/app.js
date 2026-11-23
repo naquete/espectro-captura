@@ -477,18 +477,23 @@
       'erro': t('Não deu para procurar atualização agora (sem internet?).'),
     };
     estadoAtualizacao.textContent = textos[e.fase] || '';
-    botaoAtualizar.hidden = !(e.fase === 'disponivel' || e.fase === 'pronta');
-    botaoAtualizar.textContent = e.fase === 'pronta' ? t('Reiniciar e instalar') : t('Atualizar para {0}', e.versao);
-    botaoAtualizar.dataset.fase = e.fase;
+    // o mesmo botão na barra de baixo e dentro dos Ajustes
+    [botaoAtualizar, $('atualizar-painel')].forEach(function (b) {
+      b.hidden = !(e.fase === 'disponivel' || e.fase === 'pronta');
+      b.textContent = e.fase === 'pronta' ? t('Reiniciar e instalar') : t('Atualizar para {0}', e.versao);
+      b.dataset.fase = e.fase;
+    });
     if (e.fase === 'disponivel') mostrarOsd(t('Atualização disponível: versão {0}', e.versao));
   }
   if (window.espectro) {
     window.espectro.versao().then(function (v) { $('versao').textContent = t('Versão {0}', v); });
     window.espectro.aoAtualizacao(mostrarAtualizacao);
     $('procurar-atualizacao').addEventListener('click', function () { mostrarAtualizacao({ fase: 'procurando' }); window.espectro.procurarAtualizacao(); });
-    botaoAtualizar.addEventListener('click', function () {
-      if (botaoAtualizar.dataset.fase === 'pronta') window.espectro.instalarAtualizacao();
-      else { botaoAtualizar.hidden = true; mostrarAtualizacao({ fase: 'baixando', porcento: 0 }); window.espectro.baixarAtualizacao(); }
+    [botaoAtualizar, $('atualizar-painel')].forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (b.dataset.fase === 'pronta') window.espectro.instalarAtualizacao();
+        else { mostrarAtualizacao({ fase: 'baixando', porcento: 0 }); botaoAtualizar.hidden = true; $('atualizar-painel').hidden = true; window.espectro.baixarAtualizacao(); }
+      });
     });
     // atalhos que chegam com outra janela na frente (Ctrl+Alt+tecla) e do ícone perto do relógio
     if (window.espectro.aoAtalho) window.espectro.aoAtalho(executarAtalho);

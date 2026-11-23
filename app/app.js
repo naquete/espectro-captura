@@ -36,7 +36,7 @@
     video: '', audio: '', saida: '', qualidade: '1080p60', encaixe: 'contain', proporcao: 'original', zoom: 100, mostrarFps: false,
     volume: 100, mudo: false, idioma: '',
     imagem: { estilo: 'normal', brilho: 100, contraste: 100, saturacao: 100, matiz: 0, hdr: false, espelhar: false, nitidez: 0, retro: false, crt: false },
-    som: { atraso: 0, eq: 'normal', grave: 0, medio: 0, agudo: 0, noturno: false, balanco: 0, mono: false, estabilidade: 'equilibrado' },
+    som: { atraso: 0, eq: 'normal', grave: 0, medio: 0, agudo: 0, noturno: false, balanco: 0, mono: false, estabilidade: 'equilibrado', amplitude: 100 },
     gravar: { replay: false, duracao: 30 },
     janela: { topo: false, telaCheia: false, windows: false, atalhosGlobais: true },
     perfis: {},
@@ -69,12 +69,19 @@
       grave: ctx.createBiquadFilter(), medio: ctx.createBiquadFilter(), agudo: ctx.createBiquadFilter(),
       noturno: ctx.createDynamicsCompressor(), reforco: ctx.createGain(),
       balanco: ctx.createStereoPanner(), mono: ctx.createGain(), volume: ctx.createGain(),
+      // ampliar estéreo (meio e lados): E' = a*E + b*D e D' = b*E + a*D, com a = (1+k)/2 e b = (1-k)/2
+      divide: ctx.createChannelSplitter(2), junta: ctx.createChannelMerger(2),
+      ee: ctx.createGain(), ed: ctx.createGain(), de: ctx.createGain(), dd: ctx.createGain(),
     };
     no.grave.type = 'lowshelf'; no.grave.frequency.value = 200;
     no.medio.type = 'peaking'; no.medio.frequency.value = 1500; no.medio.Q.value = 0.9;
     no.agudo.type = 'highshelf'; no.agudo.frequency.value = 4500;
     no.atraso.connect(no.grave); no.grave.connect(no.medio); no.medio.connect(no.agudo); no.agudo.connect(no.noturno);
-    no.noturno.connect(no.reforco); no.reforco.connect(no.balanco); no.balanco.connect(no.mono); no.mono.connect(no.volume);
+    no.noturno.connect(no.reforco); no.reforco.connect(no.balanco);
+    no.balanco.connect(no.divide);
+    no.divide.connect(no.ee, 0); no.divide.connect(no.de, 0); no.divide.connect(no.ed, 1); no.divide.connect(no.dd, 1);
+    no.ee.connect(no.junta, 0, 0); no.ed.connect(no.junta, 0, 0); no.de.connect(no.junta, 0, 1); no.dd.connect(no.junta, 0, 1);
+    no.junta.connect(no.mono); no.mono.connect(no.volume);
     no.volume.connect(ctx.destination);
   }
   var EQ = { normal: [0, 0, 0], passos: [-4, 2, 7], grave: [7, 0, -1], voz: [-3, 5, 2] };
@@ -85,6 +92,7 @@
     $('som-eq').value = EQ[s.eq] ? s.eq : 'personalizado';
     $('som-noturno').checked = Boolean(s.noturno); $('som-mono').checked = Boolean(s.mono);
     $('som-estabilidade').value = LATENCIAS[s.estabilidade] ? s.estabilidade : 'equilibrado';
+    $('som-amplitude').value = String(s.amplitude || 100); $('out-amplitude').textContent = (s.amplitude || 100) + '%';
     $('som-balanco').value = String(s.balanco); $('out-balanco').textContent = s.balanco === 0 ? '0' : (s.balanco < 0 ? 'E ' : 'D ') + Math.abs(s.balanco);
     if (!no) return;
     var agora = ctx.currentTime;
@@ -95,6 +103,9 @@
     no.noturno.knee.value = s.noturno ? 12 : 0; no.noturno.attack.value = 0.004; no.noturno.release.value = 0.25;
     no.reforco.gain.setTargetAtTime(s.noturno ? 2.2 : 1, agora, 0.05);
     no.balanco.pan.setTargetAtTime(s.balanco / 100, agora, 0.02);
+    var k = (Number(s.amplitude) || 100) / 100, a = (1 + k) / 2, b = (1 - k) / 2;
+    no.ee.gain.setTargetAtTime(a, agora, 0.02); no.dd.gain.setTargetAtTime(a, agora, 0.02);
+    no.ed.gain.setTargetAtTime(b, agora, 0.02); no.de.gain.setTargetAtTime(b, agora, 0.02);
     // mono: junta os dois canais num só e o Chrome espalha de volta para os dois lados
     no.mono.channelCount = s.mono ? 1 : 2; no.mono.channelCountMode = s.mono ? 'explicit' : 'max'; no.mono.channelInterpretation = 'speakers';
   }
@@ -115,7 +126,7 @@
     pref.mudo = !pref.mudo; aplicarVolume(); guardar();
     mostrarOsd(pref.mudo ? t('Mudo') : t('Volume {0}%', pref.volume));
   }
-  [['som-atraso', 'atraso'], ['som-balanco', 'balanco']].forEach(function (p) {
+  [['som-atraso', 'atraso'], ['som-balanco', 'balanco'], ['som-amplitude', 'amplitude']].forEach(function (p) {
     $(p[0]).addEventListener('input', function (e) { pref.som[p[1]] = Number(e.target.value); aplicarSom(); guardar(); });
   });
   ['grave', 'medio', 'agudo'].forEach(function (k) {

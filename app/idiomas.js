@@ -54,6 +54,8 @@
     'Equalizador': ['Equalizer', 'Ecualizador'], 'Realçar passos (jogo de tiro)': ['Footsteps boost (shooters)', 'Realzar pasos (juegos de disparos)'], 'Mais grave': ['More bass', 'Más graves'], 'Vozes mais claras': ['Clearer voices', 'Voces más claras'],
     'Grave': ['Bass', 'Graves'], 'Médio': ['Mid', 'Medios'], 'Agudo': ['Treble', 'Agudos'],
     'Modo noturno: segura explosões e deixa falas mais altas': ['Night mode: tames explosions and lifts dialogue', 'Modo nocturno: suaviza explosiones y sube los diálogos'],
+    'Ampliar estéreo': ['Stereo widening', 'Ampliar estéreo'],
+    'Aumenta a diferença entre esquerda e direita para perceber melhor de onde vem o barulho no fone. 100% deixa o som como chega da placa.': ['Increases the difference between left and right so you can tell better where sounds come from on headphones. 100% keeps the sound as the card sends it.', 'Aumenta la diferencia entre izquierda y derecha para percibir mejor de dónde viene el ruido en los auriculares. 100% deja el sonido como llega de la capturadora.'],
     'Balanço (esquerda e direita)': ['Balance (left and right)', 'Balance (izquierda y derecha)'],
     'Som mono (para quem joga com um fone só)': ['Mono sound (for one earbud)', 'Sonido mono (para un solo auricular)'],
     'Voltar o som ao padrão': ['Reset the sound', 'Restablecer el sonido'],

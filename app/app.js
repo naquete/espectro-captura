@@ -354,20 +354,24 @@
 
   // ---------------------------------------------------------------- sem sinal: imagem toda preta por alguns segundos
   var semSinal = (function () {
-    var tela = document.createElement('canvas'); tela.width = 32; tela.height = 18;
+    // A tela de perfis do PS5 escurecida por inatividade chega a brilho máximo 13 de 255 e disparava o aviso
+    // (medido no print de 23/11/2026). Agora: 320x180 sem suavizar (o texto fino não some na média) e só é
+    // "sem sinal" se NENHUM ponto passar de 6, por 10 s seguidos. Sem sinal de verdade, a placa entrega preto puro.
+    var L = 320, A = 180;
+    var tela = document.createElement('canvas'); tela.width = L; tela.height = A;
     var c2 = tela.getContext('2d', { willReadFrequently: true });
+    c2.imageSmoothingEnabled = false;
     var escuros = 0;
     setInterval(function () {
       var trilhaV = streamVideo && streamVideo.getVideoTracks()[0];
       if (!trilhaV || trilhaV.readyState !== 'live' || video.readyState < 2) { $('sem-sinal').hidden = true; return; }
       try {
-        c2.drawImage(video, 0, 0, 32, 18);
-        var px = c2.getImageData(0, 0, 32, 18).data, soma = 0, soma2 = 0, n = px.length / 4;
-        for (var i = 0; i < px.length; i += 4) { var l = (px[i] + px[i + 1] + px[i + 2]) / 3; soma += l; soma2 += l * l; }
-        var media = soma / n, desvio = Math.sqrt(Math.max(0, soma2 / n - media * media));
-        escuros = media < 6 && desvio < 3 ? escuros + 1 : 0; // tela de carregamento curta não dispara
+        c2.drawImage(video, 0, 0, L, A);
+        var px = c2.getImageData(0, 0, L, A).data, soma = 0, maximo = 0, n = px.length / 4;
+        for (var i = 0; i < px.length; i += 4) { var l = (px[i] + px[i + 1] + px[i + 2]) / 3; soma += l; if (l > maximo) maximo = l; }
+        escuros = soma / n < 2 && maximo <= 6 ? escuros + 1 : 0;
       } catch (e) { escuros = 0; }
-      $('sem-sinal').hidden = !(escuros >= 5 || trilhaV.muted);
+      $('sem-sinal').hidden = !(escuros >= 10 || trilhaV.muted);
     }, 1000);
     return { reiniciar: function () { escuros = 0; $('sem-sinal').hidden = true; } };
   })();

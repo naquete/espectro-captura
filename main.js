@@ -99,7 +99,8 @@ async function procurar() {
 ipcMain.handle('versao', () => app.getVersion());
 ipcMain.handle('atualizacao:procurar', () => procurar());
 ipcMain.handle('atualizacao:baixar', () => autoUpdater.downloadUpdate().catch(() => avisarAtualizacao({ fase: 'erro' })));
-ipcMain.handle('atualizacao:instalar', () => { fecharDeVez = true; autoUpdater.quitAndInstall(false, true); });
+// instala em silêncio (sem as telas do instalador) e abre o programa de novo sozinho
+ipcMain.handle('atualizacao:instalar', () => { fecharDeVez = true; autoUpdater.quitAndInstall(true, true); });
 
 // ---------------------------------------------------------------- janela, Windows, atalhos com outra janela na frente
 ipcMain.handle('tela-cheia', (e) => {

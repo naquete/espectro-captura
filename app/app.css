@@ -1,55 +1,76 @@
 *,*::before,*::after{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#000;color:#f4f4f5;font:14px/1.4 "Segoe UI",system-ui,sans-serif;overflow:hidden;user-select:none}
 body.ocioso{cursor:none}
+[hidden]{display:none !important}
 
-#video{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+/* palco: a imagem fica dentro dele (proporção, zoom e arrastar mexem só no vídeo) */
+.palco{position:fixed;inset:0;overflow:hidden;background:#000}
+#video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;background:#000;transform-origin:center center}
 #video.cover{object-fit:cover}
+#video.retro{image-rendering:pixelated}
+body.arrastavel .palco{cursor:grab}
+body.arrastando .palco{cursor:grabbing}
+.svg-filtros{position:absolute;width:0;height:0;overflow:hidden}
+
+/* efeito de TV de tubo: linhas finas e bordas escuras por cima da imagem */
+.crt{position:fixed;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.55) 100%)}
 
 svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.svg-filtros{width:0;height:0}
 
 /* barra de controles: aparece com o mouse, some sozinha */
-.barra{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;
-  width:min(720px,calc(100vw - 32px));padding:8px 12px;border-radius:14px;background:rgba(12,12,16,.78);
+.barra{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;
+  width:min(820px,calc(100vw - 32px));padding:8px 12px;border-radius:14px;background:rgba(12,12,16,.78);
   border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px);transition:opacity .25s,transform .25s}
 body.ocioso .barra{opacity:0;transform:translate(-50%,8px);pointer-events:none}
-.icone{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:0;border-radius:10px;background:transparent;color:inherit;cursor:pointer}
+.icone{display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex:none;border:0;border-radius:10px;background:transparent;color:inherit;cursor:pointer}
 .icone:hover{background:rgba(255,255,255,.1)}
 .icone .i-mudo,.mudo .icone .i-som{display:none}
 .mudo .icone .i-mudo{display:block}
 #mudo .i-mudo{color:#ff6b6b}
-#volume{width:min(260px,40vw);accent-color:#d4ff3f}
+#b-gravar.gravando{color:#ff5c5c}
+#volume{width:min(220px,30vw);accent-color:#d4ff3f}
 .num{min-width:44px;font-variant-numeric:tabular-nums;opacity:.9}
 .espaco{flex:1}
 .info{font-size:12px;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* volume grande no meio quando muda */
-.osd{position:fixed;top:22px;right:22px;padding:10px 16px;border-radius:12px;background:rgba(12,12,16,.8);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+/* aviso no canto (volume, print salvo...) */
+.osd{position:fixed;top:22px;right:22px;max-width:min(520px,calc(100vw - 44px));padding:10px 16px;border-radius:12px;background:rgba(12,12,16,.82);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+/* gravando e FPS, no canto de cima à esquerda */
+.cantos{position:fixed;top:16px;left:16px;display:flex;gap:8px;pointer-events:none}
+.rec,.fps{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:8px;background:rgba(12,12,16,.72);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.rec i{width:9px;height:9px;border-radius:50%;background:#ff4d4d;animation:piscar 1.2s ease-in-out infinite}
+@keyframes piscar{50%{opacity:.25}}
 
 .mensagem{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
 .mensagem p{max-width:520px;margin:0;font-size:16px;opacity:.85}
+.sem-sinal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;gap:6px;max-width:440px;padding:18px 22px;border-radius:14px;background:rgba(12,12,16,.85);text-align:center;font-size:14px}
+.sem-sinal strong{font-size:17px}
+.sem-sinal span{opacity:.75}
 
-.painel{position:fixed;top:16px;right:16px;bottom:16px;width:min(360px,calc(100vw - 32px));overflow:auto;padding:18px;border-radius:16px;
+/* ajustes */
+.painel{position:fixed;top:16px;right:16px;bottom:16px;width:min(380px,calc(100vw - 32px));overflow:auto;padding:18px;border-radius:16px;
   background:rgba(14,14,18,.96);border:1px solid rgba(255,255,255,.1)}
 .painel h2{margin:0 0 12px;font-size:17px}
 .painel label{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:13px;opacity:.95}
 .painel select{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:#1a1a20;color:inherit;font:inherit}
+.abas{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.aba{padding:6px 11px;border:1px solid rgba(255,255,255,.15);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.aba.ativa{background:#d4ff3f;border-color:#d4ff3f;color:#111;font-weight:600}
 .dica{font-size:12px;opacity:.6}
 .botao{padding:9px 18px;border:0;border-radius:10px;background:#d4ff3f;color:#111;font:inherit;font-weight:600;cursor:pointer}
 .botao-pequeno{padding:6px 12px;font-size:13px;white-space:nowrap}
-.botao-borda{padding:7px 12px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.botao-borda{padding:7px 12px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
 .botao-borda:hover{background:rgba(255,255,255,.08)}
-.bloco-versao{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0 14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);font-size:13px}
+.bloco-versao{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);font-size:13px}
 .bloco-versao .dica{flex-basis:100%;margin:0}
-
-/* fale com a Espectro (relato) */
 .botao-largo{width:100%;margin-bottom:14px}
 .painel textarea,.painel input[type=text],.painel input[type=email]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:#1a1a20;color:inherit;font:inherit;resize:vertical}
 .painel .marcar{flex-direction:row;align-items:flex-start;gap:8px}
-.linha-botoes{display:flex;gap:10px}
-
-/* seções Imagem e Janela dos ajustes */
+.linha-botoes{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.linha-botoes select,.linha-botoes input{flex:1;min-width:0}
 .sub-painel{margin:18px 0 10px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1);font-size:14px}
 .painel label.faixa-ajuste{display:grid;grid-template-columns:1fr auto;gap:4px}
 .faixa-ajuste output{opacity:.7;font-variant-numeric:tabular-nums}
 .faixa-ajuste input[type=range]{grid-column:1/-1;width:100%;accent-color:#d4ff3f}
-#video.espelhado{transform:scaleX(-1)}

@@ -2,112 +2,232 @@
 <html lang="pt-br">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob: mediastream:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; worker-src 'self' blob:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Espectro Captura</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<video id="video" autoplay playsinline muted disablepictureinpicture></video>
+<!-- filtros de nitidez (SVG): a imagem usa url(#nitidez1) ou url(#nitidez2) -->
+<svg class="svg-filtros" aria-hidden="true" focusable="false">
+  <filter id="nitidez1" color-interpolation-filters="sRGB"><feConvolveMatrix order="3" preserveAlpha="true" kernelMatrix="0 -0.35 0 -0.35 2.4 -0.35 0 -0.35 0"/></filter>
+  <filter id="nitidez2" color-interpolation-filters="sRGB"><feConvolveMatrix order="3" preserveAlpha="true" kernelMatrix="0 -0.75 0 -0.75 4 -0.75 0 -0.75 0"/></filter>
+</svg>
+
+<div id="palco" class="palco">
+  <video id="video" autoplay playsinline muted disablepictureinpicture></video>
+</div>
+<div id="crt" class="crt" hidden></div>
 
 <div id="mensagem" class="mensagem" hidden>
   <p id="mensagem-texto">Procurando a placa de captura...</p>
-  <button id="mensagem-acao" class="botao" type="button" hidden>Tentar de novo</button>
+  <button id="mensagem-acao" class="botao" type="button" hidden data-t>Tentar de novo</button>
+</div>
+<div id="sem-sinal" class="sem-sinal" hidden>
+  <strong data-t>Sem imagem da placa</strong>
+  <span data-t>O console está desligado ou o cabo HDMI soltou? A imagem volta sozinha.</span>
 </div>
 
 <div id="osd" class="osd" hidden></div>
+<div id="cantos" class="cantos">
+  <span id="rec" class="rec" hidden><i></i><span id="rec-tempo">00:00</span></span>
+  <span id="fps" class="fps" hidden></span>
+</div>
 
 <div id="barra" class="barra">
-  <button id="mudo" class="icone" type="button" title="Mudo (M)" aria-label="Mudo">
+  <button id="mudo" class="icone" type="button" data-t-title="Mudo (M)" title="Mudo (M)">
     <svg class="i-som" viewBox="0 0 24 24"><path d="M15 8a5 5 0 0 1 0 8M17.7 5a9 9 0 0 1 0 14M6 15h-2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5a.8.8 0 0 1 1.5.5v14a.8.8 0 0 1-1.5.5l-3.5-4.5"/></svg>
     <svg class="i-mudo" viewBox="0 0 24 24"><path d="M6 15h-2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5a.8.8 0 0 1 1.5.5v14a.8.8 0 0 1-1.5.5l-3.5-4.5M16 10l4 4m0-4l-4 4"/></svg>
   </button>
-  <input id="volume" type="range" min="0" max="200" step="1" value="100" aria-label="Volume">
+  <input id="volume" type="range" min="0" max="200" step="1" value="100" data-t-aria="Volume" aria-label="Volume">
   <span id="volume-num" class="num">100%</span>
   <span class="espaco"></span>
   <span id="info" class="info"></span>
   <button id="atualizar" class="botao botao-pequeno" type="button" hidden>Atualizar</button>
-  <button id="ajustes" class="icone" type="button" title="Ajustes" aria-label="Ajustes">
+  <button id="b-print" class="icone" type="button" data-t-title="Print (P)" title="Print (P)">
+    <svg viewBox="0 0 24 24"><path d="M5 7h1a2 2 0 0 0 2-2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2M9 13a3 3 0 1 0 6 0a3 3 0 0 0-6 0"/></svg>
+  </button>
+  <button id="b-replay" class="icone" type="button" data-t-title="Salvar o replay (R)" title="Salvar o replay (R)">
+    <svg viewBox="0 0 24 24"><path d="M12 8v4l2 2M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>
+  </button>
+  <button id="b-gravar" class="icone" type="button" data-t-title="Gravar vídeo (G)" title="Gravar vídeo (G)">
+    <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M8 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0"/></svg>
+  </button>
+  <button id="ajustes" class="icone" type="button" data-t-title="Ajustes" title="Ajustes">
     <svg viewBox="0 0 24 24"><path d="M12 6a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4 6h8M16 6h4M6 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4 12h2M10 12h10M15 18a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4 18h11M19 18h1"/></svg>
   </button>
-  <button id="tela-cheia" class="icone" type="button" title="Tela cheia (F)" aria-label="Tela cheia">
+  <button id="tela-cheia" class="icone" type="button" data-t-title="Tela cheia (F)" title="Tela cheia (F)">
     <svg viewBox="0 0 24 24"><path d="M4 8v-2a2 2 0 0 1 2-2h2M4 16v2a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v2M16 20h2a2 2 0 0 0 2-2v-2"/></svg>
   </button>
 </div>
 
 <aside id="painel" class="painel" hidden>
-  <h2>Ajustes</h2>
-  <label>Imagem (placa de captura)<select id="sel-video"></select></label>
-  <label>Som da placa<select id="sel-audio"></select></label>
-  <label>Tocar o som em<select id="sel-saida"></select></label>
-  <label>Qualidade
-    <select id="sel-qualidade"></select>
-  </label>
-  <p class="dica">Escolha o que a sua placa aguenta. Se ela não fizer a combinação escolhida, entrega a mais próxima e o app mostra o que chegou. Para 4K ou 1440p, o console ou PC também precisa estar mandando essa resolução para a placa.</p>
-  <label>Encaixe da imagem
-    <select id="sel-encaixe">
-      <option value="contain">Imagem inteira (barras pretas se precisar)</option>
-      <option value="cover">Preencher a janela (corta as bordas)</option>
-    </select>
-  </label>
+  <h2 data-t>Ajustes</h2>
+  <nav class="abas" role="tablist">
+    <button type="button" class="aba ativa" data-aba="placa" data-t>Placa</button>
+    <button type="button" class="aba" data-aba="imagem" data-t>Imagem</button>
+    <button type="button" class="aba" data-aba="som" data-t>Som</button>
+    <button type="button" class="aba" data-aba="gravar" data-t>Gravar</button>
+    <button type="button" class="aba" data-aba="programa" data-t>Programa</button>
+  </nav>
 
-  <h3 class="sub-painel">Imagem</h3>
-  <label>Estilo pronto
-    <select id="img-estilo">
-      <option value="normal">Normal</option>
-      <option value="vivido">Vívido</option>
-      <option value="cinema">Cinema</option>
-      <option value="quente">Quente</option>
-      <option value="frio">Frio</option>
-      <option value="pb">Preto e branco</option>
-      <option value="hdr-lavado">Corrigir HDR lavado</option>
-      <option value="personalizado" hidden>Personalizado</option>
-    </select>
-  </label>
-  <label class="faixa-ajuste">Brilho <output id="out-brilho">100%</output><input id="img-brilho" type="range" min="50" max="150" step="1"></label>
-  <label class="faixa-ajuste">Contraste <output id="out-contraste">100%</output><input id="img-contraste" type="range" min="50" max="150" step="1"></label>
-  <label class="faixa-ajuste">Saturação (cor) <output id="out-saturacao">100%</output><input id="img-saturacao" type="range" min="0" max="200" step="1"></label>
-  <label class="faixa-ajuste">Tom de cor <output id="out-matiz">0°</output><input id="img-matiz" type="range" min="-180" max="180" step="1"></label>
-  <label class="marcar"><input id="img-hdr" type="checkbox"><span>Realce HDR (mais contraste e cor; corrige imagem lavada)</span></label>
-  <label class="marcar"><input id="img-espelhar" type="checkbox"><span>Espelhar a imagem</span></label>
-  <button id="img-padrao" class="botao-borda botao-largo" type="button">Voltar a imagem ao padrão</button>
-  <p class="dica">O HDR de verdade se liga no console e na placa. Quando o console manda HDR e a placa não converte, a imagem fica lavada: use "Corrigir HDR lavado" ou o Realce HDR.</p>
+  <section class="sec-aba" data-sec="placa">
+    <label><span data-t>Imagem (placa de captura)</span><select id="sel-video"></select></label>
+    <label><span data-t>Som da placa</span><select id="sel-audio"></select></label>
+    <label><span data-t>Tocar o som em</span><select id="sel-saida"></select></label>
+    <label><span data-t>Qualidade</span><select id="sel-qualidade"></select></label>
+    <p class="dica" data-t>Escolha o que a sua placa aguenta. Se ela não fizer a combinação escolhida, entrega a mais próxima e o app mostra o que chegou. Para 4K ou 1440p, o console ou PC também precisa estar mandando essa resolução para a placa.</p>
+    <label><span data-t>Encaixe da imagem</span>
+      <select id="sel-encaixe">
+        <option value="contain" data-t>Imagem inteira (barras pretas se precisar)</option>
+        <option value="cover" data-t>Preencher a janela (corta as bordas)</option>
+      </select>
+    </label>
+    <label><span data-t>Proporção</span>
+      <select id="sel-proporcao">
+        <option value="original" data-t>Original da placa</option>
+        <option value="16:9">16:9</option>
+        <option value="4:3" data-t>4:3 (console antigo)</option>
+        <option value="21:9" data-t>21:9 (ultrawide)</option>
+        <option value="esticar" data-t>Esticar na janela inteira</option>
+      </select>
+    </label>
+    <label class="faixa-ajuste"><span data-t>Zoom</span> <output id="out-zoom">100%</output><input id="zoom" type="range" min="100" max="300" step="5"></label>
+    <p class="dica" data-t>Com zoom, arraste a imagem com o mouse para escolher a parte que aparece.</p>
+    <label class="marcar"><input id="mostrar-fps" type="checkbox"><span data-t>Mostrar os quadros por segundo (FPS) no canto</span></label>
+  </section>
 
-  <h3 class="sub-painel">Janela</h3>
-  <label class="marcar"><input id="jan-topo" type="checkbox"><span>Manter a janela sempre por cima das outras</span></label>
-  <label class="marcar"><input id="jan-tela-cheia" type="checkbox"><span>Abrir já em tela cheia</span></label>
+  <section class="sec-aba" data-sec="imagem" hidden>
+    <label><span data-t>Estilo pronto</span>
+      <select id="img-estilo">
+        <option value="normal" data-t>Normal</option>
+        <option value="vivido" data-t>Vívido</option>
+        <option value="cinema" data-t>Cinema</option>
+        <option value="quente" data-t>Quente</option>
+        <option value="frio" data-t>Frio</option>
+        <option value="pb" data-t>Preto e branco</option>
+        <option value="hdr-lavado" data-t>Corrigir HDR lavado</option>
+        <option value="personalizado" hidden data-t>Personalizado</option>
+      </select>
+    </label>
+    <label class="faixa-ajuste"><span data-t>Brilho</span> <output id="out-brilho">100%</output><input id="img-brilho" type="range" min="50" max="150" step="1"></label>
+    <label class="faixa-ajuste"><span data-t>Contraste</span> <output id="out-contraste">100%</output><input id="img-contraste" type="range" min="50" max="150" step="1"></label>
+    <label class="faixa-ajuste"><span data-t>Saturação (cor)</span> <output id="out-saturacao">100%</output><input id="img-saturacao" type="range" min="0" max="200" step="1"></label>
+    <label class="faixa-ajuste"><span data-t>Tom de cor</span> <output id="out-matiz">0°</output><input id="img-matiz" type="range" min="-180" max="180" step="1"></label>
+    <label><span data-t>Nitidez</span>
+      <select id="img-nitidez">
+        <option value="0" data-t>Desligada</option>
+        <option value="1" data-t>Leve</option>
+        <option value="2" data-t>Forte</option>
+      </select>
+    </label>
+    <label class="marcar"><input id="img-hdr" type="checkbox"><span data-t>Realce HDR (mais contraste e cor; corrige imagem lavada)</span></label>
+    <label class="marcar"><input id="img-retro" type="checkbox"><span data-t>Modo retrô: pixels nítidos (console antigo)</span></label>
+    <label class="marcar"><input id="img-crt" type="checkbox"><span data-t>Efeito de TV de tubo (linhas e bordas escuras)</span></label>
+    <label class="marcar"><input id="img-espelhar" type="checkbox"><span data-t>Espelhar a imagem</span></label>
+    <button id="img-padrao" class="botao-borda botao-largo" type="button" data-t>Voltar a imagem ao padrão</button>
+    <p class="dica" data-t>O HDR de verdade se liga no console e na placa. Quando o console manda HDR e a placa não converte, a imagem fica lavada: use "Corrigir HDR lavado" ou o Realce HDR. A nitidez pode pesar em PC mais fraco.</p>
+  </section>
 
-  <div class="bloco-versao">
-    <span id="versao">Versão</span>
-    <button id="procurar-atualizacao" class="botao-borda" type="button">Procurar atualização</button>
-    <p id="estado-atualizacao" class="dica"></p>
-  </div>
-  <button id="abrir-relato" class="botao-borda botao-largo" type="button">Enviar sugestão ou relatar problema</button>
-  <p class="dica">Atalhos: M mudo · setas para cima e para baixo ou a roda do mouse mudam o volume · F ou duplo clique para tela cheia.</p>
-  <button id="fechar-painel" class="botao" type="button">Fechar</button>
+  <section class="sec-aba" data-sec="som" hidden>
+    <label><span data-t>Estabilidade do som</span>
+      <select id="som-estabilidade">
+        <option value="minimo" data-t>Menor atraso (pode estalar com o PC ocupado)</option>
+        <option value="equilibrado" data-t>Equilibrado (recomendado)</option>
+        <option value="estavel" data-t>Mais estável (sem estalos, um pouco mais de atraso)</option>
+      </select>
+    </label>
+    <label class="faixa-ajuste"><span data-t>Atraso do som</span> <output id="out-atraso">0 ms</output><input id="som-atraso" type="range" min="0" max="500" step="5"></label>
+    <p class="dica" data-t>Se o som chega antes da imagem (o tiro soa antes do clarão), aumente aos poucos até casar.</p>
+    <label><span data-t>Equalizador</span>
+      <select id="som-eq">
+        <option value="normal" data-t>Normal</option>
+        <option value="passos" data-t>Realçar passos (jogo de tiro)</option>
+        <option value="grave" data-t>Mais grave</option>
+        <option value="voz" data-t>Vozes mais claras</option>
+        <option value="personalizado" hidden data-t>Personalizado</option>
+      </select>
+    </label>
+    <label class="faixa-ajuste"><span data-t>Grave</span> <output id="out-grave">0 dB</output><input id="som-grave" type="range" min="-12" max="12" step="1"></label>
+    <label class="faixa-ajuste"><span data-t>Médio</span> <output id="out-medio">0 dB</output><input id="som-medio" type="range" min="-12" max="12" step="1"></label>
+    <label class="faixa-ajuste"><span data-t>Agudo</span> <output id="out-agudo">0 dB</output><input id="som-agudo" type="range" min="-12" max="12" step="1"></label>
+    <label class="marcar"><input id="som-noturno" type="checkbox"><span data-t>Modo noturno: segura explosões e deixa falas mais altas</span></label>
+    <label class="faixa-ajuste"><span data-t>Balanço (esquerda e direita)</span> <output id="out-balanco">0</output><input id="som-balanco" type="range" min="-100" max="100" step="5"></label>
+    <label class="marcar"><input id="som-mono" type="checkbox"><span data-t>Som mono (para quem joga com um fone só)</span></label>
+    <button id="som-padrao" class="botao-borda botao-largo" type="button" data-t>Voltar o som ao padrão</button>
+  </section>
+
+  <section class="sec-aba" data-sec="gravar" hidden>
+    <label class="marcar"><input id="rep-ligado" type="checkbox"><span data-t>Guardar sempre os últimos segundos para o replay</span></label>
+    <label><span data-t>Tamanho do replay</span>
+      <select id="rep-duracao">
+        <option value="15" data-t>15 segundos</option>
+        <option value="30" data-t>30 segundos</option>
+        <option value="60" data-t>1 minuto</option>
+      </select>
+    </label>
+    <p class="dica" data-t>O replay usa a placa de vídeo do PC o tempo todo enquanto está ligado. Desligue se o PC esquentar ou travar.</p>
+    <div class="linha-botoes">
+      <button id="abrir-prints" class="botao-borda" type="button" data-t>Abrir a pasta dos prints</button>
+      <button id="abrir-videos" class="botao-borda" type="button" data-t>Abrir a pasta dos vídeos</button>
+    </div>
+    <p class="dica" data-t>Prints em Imagens\Espectro Captura e vídeos em Vídeos\Espectro Captura. Teclas: P print, R salvar o replay, G iniciar ou parar a gravação.</p>
+  </section>
+
+  <section class="sec-aba" data-sec="programa" hidden>
+    <label><span data-t>Idioma</span>
+      <select id="sel-idioma">
+        <option value="pt">Português</option>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+      </select>
+    </label>
+    <label class="marcar"><input id="jan-topo" type="checkbox"><span data-t>Manter a janela sempre por cima das outras</span></label>
+    <label class="marcar"><input id="jan-tela-cheia" type="checkbox"><span data-t>Abrir já em tela cheia</span></label>
+    <label class="marcar"><input id="jan-windows" type="checkbox"><span data-t>Abrir junto com o Windows</span></label>
+    <label class="marcar"><input id="atalhos-globais" type="checkbox"><span data-t>Atalhos funcionando com outra janela na frente (Ctrl + Alt + tecla)</span></label>
+    <p class="dica" data-t>Com outra janela na frente: Ctrl+Alt+setas mudam o volume, Ctrl+Alt+M mudo, Ctrl+Alt+P print, Ctrl+Alt+R replay e Ctrl+Alt+G gravar.</p>
+
+    <h3 class="sub-painel" data-t>Perfis</h3>
+    <p class="dica" data-t>Guarde a imagem, o som e a qualidade de cada jogo ou placa e troque com um clique.</p>
+    <div class="linha-botoes"><select id="perfil-lista"></select><button id="perfil-usar" class="botao-borda" type="button" data-t>Usar</button><button id="perfil-apagar" class="botao-borda" type="button" data-t>Apagar</button></div>
+    <div class="linha-botoes"><input id="perfil-nome" type="text" maxlength="40" data-t-ph="Nome do perfil (ex.: FIFA)" placeholder="Nome do perfil (ex.: FIFA)"><button id="perfil-salvar" class="botao-borda" type="button" data-t>Salvar o atual</button></div>
+
+    <div class="bloco-versao">
+      <span id="versao"></span>
+      <button id="procurar-atualizacao" class="botao-borda" type="button" data-t>Procurar atualização</button>
+      <p id="estado-atualizacao" class="dica"></p>
+    </div>
+    <button id="abrir-relato" class="botao-borda botao-largo" type="button" data-t>Enviar sugestão ou relatar problema</button>
+    <p class="dica" data-t>Atalhos: M mudo · setas para cima e para baixo ou a roda do mouse mudam o volume · F ou duplo clique para tela cheia · P print · R replay · G gravar.</p>
+  </section>
+
+  <button id="fechar-painel" class="botao" type="button" data-t>Fechar</button>
 </aside>
 
 <aside id="relato" class="painel" hidden>
-  <h2>Fale com a Espectro</h2>
-  <p class="dica">Sugestão, problema ou ideia: chega direto para a equipe da Espectro Soluções.</p>
-  <label>Assunto
+  <h2 data-t>Fale com a Espectro</h2>
+  <p class="dica" data-t>Sugestão, problema ou ideia: chega direto para a equipe da Espectro Soluções.</p>
+  <label><span data-t>Assunto</span>
     <select id="relato-tipo">
-      <option value="sugestao">Sugestão</option>
-      <option value="problema">Problema</option>
-      <option value="outro">Outro</option>
+      <option value="sugestao" data-t>Sugestão</option>
+      <option value="problema" data-t>Problema</option>
+      <option value="outro" data-t>Outro</option>
     </select>
   </label>
-  <label>Mensagem<textarea id="relato-mensagem" rows="6" maxlength="3000" placeholder="Conte o que aconteceu ou o que você queria que o programa fizesse."></textarea></label>
-  <label>Seu nome (opcional)<input id="relato-nome" type="text" maxlength="120"></label>
-  <label>Seu e-mail para resposta (opcional)<input id="relato-email" type="email" maxlength="160"></label>
-  <label class="marcar"><input id="relato-tecnico" type="checkbox" checked><span>Incluir informações técnicas (versão, Windows e placa em uso)</span></label>
+  <label><span data-t>Mensagem</span><textarea id="relato-mensagem" rows="6" maxlength="3000" data-t-ph="Conte o que aconteceu ou o que você queria que o programa fizesse." placeholder="Conte o que aconteceu ou o que você queria que o programa fizesse."></textarea></label>
+  <label><span data-t>Seu nome (opcional)</span><input id="relato-nome" type="text" maxlength="120"></label>
+  <label><span data-t>Seu e-mail para resposta (opcional)</span><input id="relato-email" type="email" maxlength="160"></label>
+  <label class="marcar"><input id="relato-tecnico" type="checkbox" checked><span data-t>Incluir informações técnicas (versão, Windows e placa em uso)</span></label>
   <p id="relato-estado" class="dica" role="status"></p>
   <div class="linha-botoes">
-    <button id="relato-enviar" class="botao" type="button">Enviar</button>
-    <button id="relato-fechar" class="botao-borda" type="button">Fechar</button>
+    <button id="relato-enviar" class="botao" type="button" data-t>Enviar</button>
+    <button id="relato-fechar" class="botao-borda" type="button" data-t>Fechar</button>
   </div>
 </aside>
 
+<script src="idiomas.js"></script>
 <script src="app.js"></script>
+<script type="module" src="gravacao.js"></script>
 </body>
 </html>

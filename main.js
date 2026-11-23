@@ -1,10 +1,37 @@
 // Espectro Captura: janela que mostra e toca a placa de captura com controle de volume.
-// Só abre a página local do app; nada é carregado da internet.
-const { app, BrowserWindow, session, Menu, ipcMain, dialog, crashReporter, net } = require('electron');
+// Só abre a página local do app; a internet é usada só para procurar atualização e mandar relato (com consentimento).
+const { app, BrowserWindow, session, Menu, ipcMain, dialog, crashReporter, net, shell, globalShortcut, Tray, nativeImage } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
 const { autoUpdater } = require('electron-updater');
+
+// Teste sem janela (ESPECTRO_CAPTURA_TESTE=<arquivo.png>): abre escondido, roda o roteiro de teste, tira um print e fecha.
+const TESTE = process.env.ESPECTRO_CAPTURA_TESTE || '';
+if (TESTE) {
+  // testes nunca mexem nas preferências de quem usa o programa nem tocam som nas caixas dela
+  app.setPath('userData', path.join(os.tmpdir(), 'espectro-captura-teste'));
+  app.commandLine.appendSwitch('mute-audio');
+  // ESPECTRO_CAPTURA_TESTE_FALSO=1: câmera e microfone falsos do Chromium (testa gravação e som sem a placa)
+  if (process.env.ESPECTRO_CAPTURA_TESTE_FALSO) {
+    app.commandLine.appendSwitch('use-fake-device-for-media-stream');
+    app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
+  }
+}
+
+// Um programa aberto por vez (com "abrir junto com o Windows" e o ícone perto do relógio, evita duas janelas brigando
+// pela placa): abrir de novo só traz a janela da frente.
+if (!TESTE && !app.requestSingleInstanceLock()) { app.quit(); }
+app.on('second-instance', () => mostrarJanela());
+
+// ---------------------------------------------------------------- idioma dos avisos do programa
+let idioma = 'pt';
+const TXT = {
+  pt: { titulo: 'O Espectro Captura teve um problema e precisou recomeçar.', detalhe: 'Quer mandar um aviso para a Espectro Soluções? Vão só a versão do programa, a versão do Windows e o motivo técnico. Nenhuma imagem nem som vão junto.', enviar: 'Enviar aviso', naoEnviar: 'Não enviar', mostrar: 'Mostrar a janela', mudo: 'Mudo / com som', print: 'Print', replay: 'Salvar o replay', gravar: 'Gravar ou parar', sair: 'Sair' },
+  en: { titulo: 'Espectro Captura had a problem and had to restart.', detalhe: 'Send a report to Espectro Soluções? Only the app version, the Windows version and the technical reason are sent. No picture or sound.', enviar: 'Send report', naoEnviar: 'Don\'t send', mostrar: 'Show window', mudo: 'Mute / unmute', print: 'Screenshot', replay: 'Save replay', gravar: 'Record or stop', sair: 'Quit' },
+  es: { titulo: 'Espectro Captura tuvo un problema y tuvo que reiniciarse.', detalhe: '¿Quieres enviar un aviso a Espectro Soluções? Solo van la versión del programa, la versión de Windows y el motivo técnico. Ninguna imagen ni sonido.', enviar: 'Enviar aviso', naoEnviar: 'No enviar', mostrar: 'Mostrar la ventana', mudo: 'Silencio / con sonido', print: 'Captura', replay: 'Guardar repetición', gravar: 'Grabar o detener', sair: 'Salir' },
+};
+const tx = (k) => (TXT[idioma] || TXT.pt)[k];
 
 // ---------------------------------------------------------------- relatos (travamento, problema, sugestão)
 // Vão para a Espectro Soluções SÓ quando a pessoa aceita ou clica em enviar. Chegam em Contatos do site.
@@ -24,10 +51,8 @@ async function enviarRelato(relato) {
 // pergunta se pode mandar o relato de um travamento; se não der para enviar agora, guarda para a próxima abertura
 async function perguntarTravamento(janela, detalhes) {
   const { response } = await dialog.showMessageBox(janela && !janela.isDestroyed() ? janela : undefined, {
-    type: 'warning', title: 'Espectro Captura', noLink: true,
-    message: 'O Espectro Captura teve um problema e precisou recomeçar.',
-    detail: 'Quer mandar um aviso para a Espectro Soluções? Vão só a versão do programa, a versão do Windows e o motivo técnico. Nenhuma imagem nem som vão junto.',
-    buttons: ['Enviar aviso', 'Não enviar'], defaultId: 0, cancelId: 1,
+    type: 'warning', title: 'Espectro Captura', noLink: true, message: tx('titulo'), detail: tx('detalhe'),
+    buttons: [tx('enviar'), tx('naoEnviar')], defaultId: 0, cancelId: 1,
   });
   if (response !== 0) return;
   try { await enviarRelato({ tipo: 'travamento', detalhes }); }
@@ -54,12 +79,14 @@ ipcMain.handle('relato:enviar', async (_e, relato) => {
   } catch (e) { return { ok: false, erro: e.message || 'Não deu para enviar agora.' }; }
 });
 
-// Atualização SÓ quando a pessoa clica: o app procura (sem baixar) e mostra o botão; baixa e instala por clique.
+// ---------------------------------------------------------------- atualização SÓ quando a pessoa clica
+// O app procura (sem baixar) e mostra o botão; baixa e instala por clique.
 // Os arquivos ficam em https://espectrosolucoes.com.br/atualizacoes/espectro-captura/ (latest.yml + instalador).
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
 let janelaPrincipal = null;
-function avisarAtualizacao(estado) { if (janelaPrincipal && !janelaPrincipal.isDestroyed()) janelaPrincipal.webContents.send('atualizacao', estado); }
+function enviarParaTela(canal, dado) { if (janelaPrincipal && !janelaPrincipal.isDestroyed()) janelaPrincipal.webContents.send(canal, dado); }
+const avisarAtualizacao = (estado) => enviarParaTela('atualizacao', estado);
 autoUpdater.on('update-available', (i) => avisarAtualizacao({ fase: 'disponivel', versao: i.version }));
 autoUpdater.on('update-not-available', () => avisarAtualizacao({ fase: 'em-dia' }));
 autoUpdater.on('download-progress', (p) => avisarAtualizacao({ fase: 'baixando', porcento: Math.round(p.percent || 0) }));
@@ -72,24 +99,99 @@ async function procurar() {
 ipcMain.handle('versao', () => app.getVersion());
 ipcMain.handle('atualizacao:procurar', () => procurar());
 ipcMain.handle('atualizacao:baixar', () => autoUpdater.downloadUpdate().catch(() => avisarAtualizacao({ fase: 'erro' })));
-ipcMain.handle('atualizacao:instalar', () => autoUpdater.quitAndInstall(false, true));
+ipcMain.handle('atualizacao:instalar', () => { fecharDeVez = true; autoUpdater.quitAndInstall(false, true); });
+
+// ---------------------------------------------------------------- janela, Windows, atalhos com outra janela na frente
 ipcMain.handle('tela-cheia', (e) => {
   const j = BrowserWindow.fromWebContents(e.sender);
   if (j) j.setFullScreen(!j.isFullScreen());
 });
-// sempre por cima e abrir em tela cheia (preferências guardadas na própria tela do programa)
+const ATALHOS = { 'Control+Alt+Up': 'mais', 'Control+Alt+Down': 'menos', 'Control+Alt+M': 'mudo', 'Control+Alt+P': 'print', 'Control+Alt+R': 'replay', 'Control+Alt+G': 'gravar' };
+function atalhosGlobais(ligar) {
+  globalShortcut.unregisterAll();
+  if (!ligar || TESTE) return;
+  for (const [tecla, nome] of Object.entries(ATALHOS)) { try { globalShortcut.register(tecla, () => enviarParaTela('atalho', nome)); } catch { /* outra app já usa */ } }
+}
 ipcMain.handle('janela', (e, o) => {
   const j = BrowserWindow.fromWebContents(e.sender);
   if (!j || !o) return;
   j.setAlwaysOnTop(Boolean(o.topo), 'floating');
   if (o.telaCheia === true && !TESTE) j.setFullScreen(true);
+  if (typeof o.windows === 'boolean' && app.isPackaged && !TESTE) app.setLoginItemSettings({ openAtLogin: o.windows });
+  if (typeof o.atalhosGlobais === 'boolean') atalhosGlobais(o.atalhosGlobais);
 });
+ipcMain.handle('idioma', (_e, codigo) => { idioma = ['pt', 'en', 'es'].includes(codigo) ? codigo : 'pt'; montarBandeja(); });
+
+// ---------------------------------------------------------------- arquivos: prints (Imagens) e vídeos (Vídeos)
+const pastaDe = (qual) => (TESTE
+  ? path.join(os.tmpdir(), 'espectro-captura-teste', qual === 'imagens' ? 'imagens' : 'videos') // testes não sujam as pastas da pessoa
+  : path.join(app.getPath(qual === 'imagens' ? 'pictures' : 'videos'), 'Espectro Captura'));
+// nome vem da tela: só letras, números, espaço, hífen e ponto, sem pasta no meio
+const nomeSeguro = (nome, ext) => { const n = path.basename(String(nome || '')).replace(/[^\w .-]/g, '').slice(0, 80); return n.toLowerCase().endsWith('.' + ext) ? n : `arquivo.${ext}`; };
+ipcMain.handle('arquivo:salvar', async (_e, p) => {
+  try {
+    const pasta = pastaDe(p && p.pasta);
+    fs.mkdirSync(pasta, { recursive: true });
+    const destino = path.join(pasta, nomeSeguro(p.nome, p.pasta === 'imagens' ? 'png' : 'mp4'));
+    await fs.promises.writeFile(destino, Buffer.from(p.dados));
+    return { ok: true, caminho: destino };
+  } catch (e) { return { ok: false, erro: e.message }; }
+});
+ipcMain.handle('arquivo:abrir-pasta', (_e, qual) => { const p = pastaDe(qual); fs.mkdirSync(p, { recursive: true }); return shell.openPath(p); });
+// gravação de vídeo: o MP4 vai sendo escrito no disco aos pedaços (posição e bytes), sem guardar tudo na memória
+const gravacoes = new Map();
+let proximaGravacao = 1;
+ipcMain.handle('gravacao:abrir', (_e, nome) => {
+  try {
+    const pasta = pastaDe('videos'); fs.mkdirSync(pasta, { recursive: true });
+    const caminho = path.join(pasta, nomeSeguro(nome, 'mp4'));
+    const id = proximaGravacao++;
+    gravacoes.set(id, { fd: fs.openSync(caminho, 'w'), caminho });
+    return { ok: true, id };
+  } catch (e) { return { ok: false, erro: e.message }; }
+});
+ipcMain.handle('gravacao:escrever', (_e, id, posicao, dados) => {
+  const g = gravacoes.get(id); if (!g) return false;
+  const b = Buffer.from(dados);
+  fs.writeSync(g.fd, b, 0, b.length, posicao);
+  return true;
+});
+ipcMain.handle('gravacao:fechar', (_e, id, manter) => {
+  const g = gravacoes.get(id); if (!g) return false;
+  gravacoes.delete(id);
+  try { fs.closeSync(g.fd); } catch { /* já fechado */ }
+  if (!manter) { try { fs.unlinkSync(g.caminho); } catch { /* nada */ } }
+  return true;
+});
+
+// ---------------------------------------------------------------- ícone perto do relógio
+let bandeja = null;
+function mostrarJanela() { if (janelaPrincipal && !janelaPrincipal.isDestroyed()) { if (janelaPrincipal.isMinimized()) janelaPrincipal.restore(); janelaPrincipal.show(); janelaPrincipal.focus(); } }
+function montarBandeja() {
+  if (TESTE || !app.isReady()) return;
+  if (!bandeja) {
+    bandeja = new Tray(nativeImage.createFromPath(path.join(__dirname, 'app', 'icone.png')).resize({ width: 16, height: 16 }));
+    bandeja.setToolTip('Espectro Captura');
+    bandeja.on('click', mostrarJanela);
+  }
+  bandeja.setContextMenu(Menu.buildFromTemplate([
+    { label: tx('mostrar'), click: mostrarJanela },
+    { type: 'separator' },
+    { label: tx('mudo'), click: () => enviarParaTela('atalho', 'mudo') },
+    { label: tx('print'), click: () => enviarParaTela('atalho', 'print') },
+    { label: tx('replay'), click: () => enviarParaTela('atalho', 'replay') },
+    { label: tx('gravar'), click: () => enviarParaTela('atalho', 'gravar') },
+    { type: 'separator' },
+    { label: tx('sair'), click: () => app.quit() },
+  ]));
+}
 
 // Áudio e vídeo começam sem precisar de clique (é o próprio app, não um site)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
-// Teste sem janela (ESPECTRO_CAPTURA_TESTE=<arquivo.png>): abre escondido, tira um print e fecha.
-const TESTE = process.env.ESPECTRO_CAPTURA_TESTE || '';
+// fechar com gravação em andamento: a tela termina o arquivo antes (senão o MP4 fica sem o índice e não abre)
+let fecharDeVez = false;
+ipcMain.handle('pode-fechar', () => { fecharDeVez = true; if (janelaPrincipal && !janelaPrincipal.isDestroyed()) janelaPrincipal.close(); });
 
 function criarJanela() {
   const janela = new BrowserWindow({
@@ -100,6 +202,7 @@ function criarJanela() {
     minHeight: 300,
     backgroundColor: '#000000',
     title: 'Espectro Captura',
+    icon: path.join(__dirname, 'app', 'icone.png'),
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -114,57 +217,32 @@ function criarJanela() {
   janela.loadFile(path.join(__dirname, 'app', 'index.html'));
   // ao abrir, só PROCURA se tem versão nova (não baixa nada sem o clique da pessoa)
   if (!TESTE) janela.webContents.once('did-finish-load', () => setTimeout(procurar, 4000));
-  // Esc sai da tela cheia
+  janela.on('close', (e) => {
+    if (fecharDeVez || TESTE || gravacoes.size === 0) return;
+    e.preventDefault();
+    enviarParaTela('fechar-pedido');
+    setTimeout(() => { fecharDeVez = true; if (!janela.isDestroyed()) janela.close(); }, 8000); // não trava se a tela não responder
+  });
+  // F11 alterna tela cheia pelo processo principal (funciona mesmo com foco no vídeo); Esc sai da tela cheia
   janela.webContents.on('before-input-event', (_e, entrada) => {
-    if (entrada.type === 'keyDown' && entrada.key === 'Escape' && janela.isFullScreen()) janela.setFullScreen(false);
+    if (entrada.type !== 'keyDown') return;
+    if (entrada.key === 'F11') janela.setFullScreen(!janela.isFullScreen());
+    if (entrada.key === 'Escape' && janela.isFullScreen()) janela.setFullScreen(false);
   });
   if (TESTE) {
     setTimeout(async () => {
-      // ESPECTRO_CAPTURA_TESTE_QUALIDADE=2160p30: troca a qualidade pelos Ajustes e espera reabrir
-      const q = process.env.ESPECTRO_CAPTURA_TESTE_QUALIDADE;
-      if (q) {
-        const opcoes = await janela.webContents.executeJavaScript("[...document.querySelectorAll('#sel-qualidade option')].map(o => o.value).join(',')");
-        console.log('opcoes: ' + opcoes);
-        await janela.webContents.executeJavaScript(`(() => { const s = document.getElementById('sel-qualidade'); s.value = ${JSON.stringify(q)}; s.dispatchEvent(new Event('change')); })()`);
-        await new Promise((ok) => setTimeout(ok, 5000));
-      }
-      if (process.env.ESPECTRO_CAPTURA_TESTE_TELACHEIA) {
-        await janela.webContents.executeJavaScript("document.getElementById('tela-cheia').click()");
-        await new Promise((ok) => setTimeout(ok, 1500));
-        console.log('tela cheia depois do clique: ' + janela.isFullScreen());
-        await janela.webContents.executeJavaScript("document.getElementById('tela-cheia').click()");
-        await new Promise((ok) => setTimeout(ok, 1500));
-        console.log('tela cheia depois do segundo clique: ' + janela.isFullScreen());
-        console.log('versao na tela: ' + await janela.webContents.executeJavaScript("document.getElementById('versao').textContent"));
-      }
-      // ESPECTRO_CAPTURA_TESTE_ATUALIZACAO=1 (ou =<url de um servidor de teste>): procura atualização e mostra o estado
-      const ta = process.env.ESPECTRO_CAPTURA_TESTE_ATUALIZACAO;
-      if (ta) {
-        if (/^https?:/.test(ta)) autoUpdater.setFeedURL({ provider: 'generic', url: ta });
-        await procurar();
-        await new Promise((ok) => setTimeout(ok, 2500));
-        const est = await janela.webContents.executeJavaScript("({ estado: document.getElementById('estado-atualizacao').textContent, botao: document.getElementById('atualizar').hidden ? '(sem botão)' : document.getElementById('atualizar').textContent })");
-        console.log('atualizacao: ' + JSON.stringify(est));
-      }
-      // ESPECTRO_CAPTURA_TESTE_RELATO=1: abre o formulário de relato (para o print) e envia um relato de teste de verdade
-      if (process.env.ESPECTRO_CAPTURA_TESTE_RELATO) {
-        await janela.webContents.executeJavaScript("document.getElementById('abrir-relato').click(); document.getElementById('relato-mensagem').value = 'Teste automático do envio de relatos pelo programa (pode apagar).'; document.getElementById('relato-tipo').value = 'outro'; document.getElementById('relato-enviar').click()");
-        await new Promise((ok) => setTimeout(ok, 4000));
-        console.log('relato: ' + await janela.webContents.executeJavaScript("document.getElementById('relato-estado').textContent"));
-      }
-      // ESPECTRO_CAPTURA_TESTE_IMAGEM=hdr-lavado: abre os Ajustes, aplica o estilo e mostra o filtro da imagem
-      const ti = process.env.ESPECTRO_CAPTURA_TESTE_IMAGEM;
-      if (ti) {
-        await janela.webContents.executeJavaScript(`(() => { document.getElementById('painel').hidden = false; const s = document.getElementById('img-estilo'); s.value = ${JSON.stringify(ti)}; s.dispatchEvent(new Event('change')); document.getElementById('img-hdr').scrollIntoView(); })()`);
-        await new Promise((ok) => setTimeout(ok, 800));
-        console.log('imagem: ' + await janela.webContents.executeJavaScript("JSON.stringify({ filtro: document.getElementById('video').style.filter, brilho: document.getElementById('out-brilho').textContent, hdr: document.getElementById('img-hdr').checked })"));
+      // ESPECTRO_CAPTURA_TESTE_ROTEIRO=<arquivo.js>: corpo de uma função assíncrona rodada na tela; o retorno vai para o log
+      const roteiro = process.env.ESPECTRO_CAPTURA_TESTE_ROTEIRO;
+      if (roteiro) {
+        try { console.log('roteiro: ' + await janela.webContents.executeJavaScript(`(async () => { ${fs.readFileSync(roteiro, 'utf8')} })()`)); }
+        catch (e) { console.log('roteiro falhou: ' + e.message); }
       }
       const img = await janela.webContents.capturePage();
-      require('node:fs').writeFileSync(TESTE, img.toPNG());
+      fs.writeFileSync(TESTE, img.toPNG());
       const estado = await janela.webContents.executeJavaScript("({ info: document.getElementById('info').textContent, aviso: document.getElementById('mensagem').hidden ? '' : document.getElementById('mensagem-texto').textContent, largura: document.getElementById('video').videoWidth })");
       console.log(JSON.stringify(estado));
       app.quit();
-    }, 7000);
+    }, 6000);
   }
   // A tela do programa caiu (falta de memória, falha do vídeo...): recarrega e pergunta se pode avisar
   janela.webContents.on('render-process-gone', (_e, d) => {
@@ -176,20 +254,16 @@ function criarJanela() {
   // Nenhum link abre outra janela nem navega para fora do app
   janela.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   janela.webContents.on('will-navigate', (e) => e.preventDefault());
-  // F11 alterna tela cheia também pelo processo principal (funciona mesmo com foco no vídeo)
-  janela.webContents.on('before-input-event', (_e, entrada) => {
-    if (entrada.type === 'keyDown' && entrada.key === 'F11') janela.setFullScreen(!janela.isFullScreen());
-  });
 }
 
 app.whenReady().then(() => {
-  // Câmera e microfone (a placa de captura) só para a página do próprio app
+  // Câmera e microfone (a placa de captura) e tela cheia só para a página do próprio app
   const ehLocal = (url) => String(url || '').startsWith('file://');
-  // (a tela cheia também precisa estar liberada aqui; antes ela era recusada e o botão não fazia nada)
   const liberadas = new Set(['media', 'fullscreen']);
   session.defaultSession.setPermissionRequestHandler((wc, permissao, ok) => ok(liberadas.has(permissao) && ehLocal(wc.getURL())));
   session.defaultSession.setPermissionCheckHandler((wc, permissao) => liberadas.has(permissao) && ehLocal(wc ? wc.getURL() : ''));
   criarJanela();
+  montarBandeja();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) criarJanela(); });
   // O programa fechou de repente da última vez (arquivo .dmp novo) ou um aviso ficou sem enviar: pergunta agora
   if (!TESTE) {
@@ -209,4 +283,5 @@ app.on('child-process-gone', (_e, d) => {
   perguntarTravamento(janelaPrincipal, `Um componente do programa parou: ${d.type} ${d.name || ''} ${d.reason} (código ${d.exitCode}).`);
 });
 
+app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => app.quit());

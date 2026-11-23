@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('espectro', {
   telaCheia: () => ipcRenderer.invoke('tela-cheia'),
+  janela: (opcoes) => ipcRenderer.invoke('janela', opcoes),
   versao: () => ipcRenderer.invoke('versao'),
   procurarAtualizacao: () => ipcRenderer.invoke('atualizacao:procurar'),
   baixarAtualizacao: () => ipcRenderer.invoke('atualizacao:baixar'),

@@ -32,8 +32,16 @@
   }
 
   // ---------------------------------------------------------------- preferências
-  var pref = { video: '', audio: '', saida: '', qualidade: '1080p60', encaixe: 'contain', volume: 100, mudo: false };
-  try { Object.assign(pref, JSON.parse(localStorage.getItem('captura') || '{}')); } catch (e) { /* começa do padrão */ }
+  var pref = { video: '', audio: '', saida: '', qualidade: '1080p60', encaixe: 'contain', volume: 100, mudo: false,
+    imagem: { estilo: 'normal', brilho: 100, contraste: 100, saturacao: 100, matiz: 0, hdr: false, espelhar: false },
+    janela: { topo: false, telaCheia: false } };
+  try {
+    var salvo = JSON.parse(localStorage.getItem('captura') || '{}');
+    var imgPadrao = pref.imagem, janPadrao = pref.janela;
+    Object.assign(pref, salvo);
+    pref.imagem = Object.assign({}, imgPadrao, salvo.imagem || {});
+    pref.janela = Object.assign({}, janPadrao, salvo.janela || {});
+  } catch (e) { /* começa do padrão */ }
   function guardar() { try { localStorage.setItem('captura', JSON.stringify(pref)); } catch (e) { /* sem armazenamento */ } }
 
   // ---------------------------------------------------------------- som
@@ -122,7 +130,7 @@
         video: { deviceId: { exact: cam.deviceId }, width: { ideal: q[0] }, height: { ideal: q[1] }, frameRate: { ideal: q[2] } },
       });
       video.srcObject = streamVideo;
-      video.className = pref.encaixe === 'cover' ? 'cover' : '';
+      video.classList.toggle('cover', pref.encaixe === 'cover');
       if (mic) {
         // sem cancelamento de eco, redução de ruído nem ganho automático: o som do jogo como ele é
         streamAudio = await navigator.mediaDevices.getUserMedia({
@@ -174,13 +182,55 @@
   $('sel-audio').addEventListener('change', function (e) { pref.audio = e.target.value; guardar(); abrir(); });
   $('sel-saida').addEventListener('change', function (e) { pref.saida = e.target.value; guardar(); aplicarSaida(); });
   $('sel-qualidade').addEventListener('change', function (e) { pref.qualidade = e.target.value; guardar(); abrir(); });
-  $('sel-encaixe').addEventListener('change', function (e) { pref.encaixe = e.target.value; guardar(); video.className = pref.encaixe === 'cover' ? 'cover' : ''; });
+  $('sel-encaixe').addEventListener('change', function (e) { pref.encaixe = e.target.value; guardar(); video.classList.toggle('cover', pref.encaixe === 'cover'); });
   video.addEventListener('dblclick', alternarTelaCheia);
   // tela cheia pela própria janela do programa (o pedido de tela cheia da página o Electron pode ignorar)
   function alternarTelaCheia() {
     if (window.espectro && window.espectro.telaCheia) { window.espectro.telaCheia(); return; }
     if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(function () {});
   }
+
+  // ---------------------------------------------------------------- imagem (cores, brilho, realce HDR, espelhar)
+  // Tudo por filtro na própria tela (a GPU faz, sem atraso perceptível); a placa continua mandando a imagem igual.
+  var ESTILOS = {
+    normal: { brilho: 100, contraste: 100, saturacao: 100, matiz: 0, hdr: false },
+    vivido: { brilho: 103, contraste: 112, saturacao: 140, matiz: 0, hdr: false },
+    cinema: { brilho: 95, contraste: 118, saturacao: 85, matiz: 0, hdr: false },
+    quente: { brilho: 102, contraste: 104, saturacao: 112, matiz: -8, hdr: false },
+    frio: { brilho: 100, contraste: 104, saturacao: 105, matiz: 10, hdr: false },
+    pb: { brilho: 100, contraste: 115, saturacao: 0, matiz: 0, hdr: false },
+    'hdr-lavado': { brilho: 92, contraste: 128, saturacao: 135, matiz: 0, hdr: true },
+  };
+  var CAMPOS_IMG = [['brilho', '%'], ['contraste', '%'], ['saturacao', '%'], ['matiz', '°']];
+  function aplicarImagem() {
+    var i = pref.imagem;
+    // realce HDR: curva mais forte nos tons médios e cor mais cheia, por cima dos ajustes da pessoa
+    var hdr = i.hdr ? ' contrast(1.12) saturate(1.18) brightness(0.97)' : '';
+    var filtro = 'brightness(' + i.brilho / 100 + ') contrast(' + i.contraste / 100 + ') saturate(' + i.saturacao / 100 + ') hue-rotate(' + i.matiz + 'deg)' + hdr;
+    video.style.filter = filtro === 'brightness(1) contrast(1) saturate(1) hue-rotate(0deg)' ? '' : filtro;
+    video.classList.toggle('espelhado', Boolean(i.espelhar));
+    CAMPOS_IMG.forEach(function (c) { $('img-' + c[0]).value = String(i[c[0]]); $('out-' + c[0]).textContent = i[c[0]] + c[1]; });
+    $('img-hdr').checked = Boolean(i.hdr); $('img-espelhar').checked = Boolean(i.espelhar);
+    $('img-estilo').value = ESTILOS[i.estilo] ? i.estilo : 'personalizado';
+  }
+  CAMPOS_IMG.forEach(function (c) {
+    $('img-' + c[0]).addEventListener('input', function (e) { pref.imagem[c[0]] = Number(e.target.value); pref.imagem.estilo = 'personalizado'; aplicarImagem(); guardar(); });
+  });
+  $('img-estilo').addEventListener('change', function (e) {
+    var est = ESTILOS[e.target.value]; if (!est) return;
+    Object.assign(pref.imagem, est, { estilo: e.target.value }); aplicarImagem(); guardar();
+  });
+  $('img-hdr').addEventListener('change', function (e) { pref.imagem.hdr = e.target.checked; pref.imagem.estilo = 'personalizado'; aplicarImagem(); guardar(); mostrarOsd(e.target.checked ? 'Realce HDR ligado' : 'Realce HDR desligado'); });
+  $('img-espelhar').addEventListener('change', function (e) { pref.imagem.espelhar = e.target.checked; aplicarImagem(); guardar(); });
+  $('img-padrao').addEventListener('click', function () { Object.assign(pref.imagem, ESTILOS.normal, { estilo: 'normal', espelhar: false }); aplicarImagem(); guardar(); mostrarOsd('Imagem padrão'); });
+
+  // ---------------------------------------------------------------- janela (sempre por cima, abrir em tela cheia)
+  function aplicarJanela(inicio) {
+    $('jan-topo').checked = Boolean(pref.janela.topo); $('jan-tela-cheia').checked = Boolean(pref.janela.telaCheia);
+    if (window.espectro && window.espectro.janela) window.espectro.janela({ topo: Boolean(pref.janela.topo), telaCheia: inicio && pref.janela.telaCheia ? true : undefined });
+  }
+  $('jan-topo').addEventListener('change', function (e) { pref.janela.topo = e.target.checked; guardar(); aplicarJanela(false); });
+  $('jan-tela-cheia').addEventListener('change', function (e) { pref.janela.telaCheia = e.target.checked; guardar(); });
 
   // ---------------------------------------------------------------- fale com a Espectro (sugestão ou problema)
   $('abrir-relato').addEventListener('click', function () { $('painel').hidden = true; $('relato').hidden = false; $('relato-estado').textContent = ''; $('relato-mensagem').focus(); });
@@ -258,5 +308,7 @@
   });
 
   aplicarVolume();
+  aplicarImagem();
+  aplicarJanela(true);
   abrir();
 })();

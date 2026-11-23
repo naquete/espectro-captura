@@ -77,6 +77,13 @@ ipcMain.handle('tela-cheia', (e) => {
   const j = BrowserWindow.fromWebContents(e.sender);
   if (j) j.setFullScreen(!j.isFullScreen());
 });
+// sempre por cima e abrir em tela cheia (preferências guardadas na própria tela do programa)
+ipcMain.handle('janela', (e, o) => {
+  const j = BrowserWindow.fromWebContents(e.sender);
+  if (!j || !o) return;
+  j.setAlwaysOnTop(Boolean(o.topo), 'floating');
+  if (o.telaCheia === true && !TESTE) j.setFullScreen(true);
+});
 
 // Áudio e vídeo começam sem precisar de clique (é o próprio app, não um site)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -144,6 +151,13 @@ function criarJanela() {
         await janela.webContents.executeJavaScript("document.getElementById('abrir-relato').click(); document.getElementById('relato-mensagem').value = 'Teste automático do envio de relatos pelo programa (pode apagar).'; document.getElementById('relato-tipo').value = 'outro'; document.getElementById('relato-enviar').click()");
         await new Promise((ok) => setTimeout(ok, 4000));
         console.log('relato: ' + await janela.webContents.executeJavaScript("document.getElementById('relato-estado').textContent"));
+      }
+      // ESPECTRO_CAPTURA_TESTE_IMAGEM=hdr-lavado: abre os Ajustes, aplica o estilo e mostra o filtro da imagem
+      const ti = process.env.ESPECTRO_CAPTURA_TESTE_IMAGEM;
+      if (ti) {
+        await janela.webContents.executeJavaScript(`(() => { document.getElementById('painel').hidden = false; const s = document.getElementById('img-estilo'); s.value = ${JSON.stringify(ti)}; s.dispatchEvent(new Event('change')); document.getElementById('img-hdr').scrollIntoView(); })()`);
+        await new Promise((ok) => setTimeout(ok, 800));
+        console.log('imagem: ' + await janela.webContents.executeJavaScript("JSON.stringify({ filtro: document.getElementById('video').style.filter, brilho: document.getElementById('out-brilho').textContent, hdr: document.getElementById('img-hdr').checked })"));
       }
       const img = await janela.webContents.capturePage();
       require('node:fs').writeFileSync(TESTE, img.toPNG());

@@ -50,6 +50,33 @@
       <option value="cover">Preencher a janela (corta as bordas)</option>
     </select>
   </label>
+
+  <h3 class="sub-painel">Imagem</h3>
+  <label>Estilo pronto
+    <select id="img-estilo">
+      <option value="normal">Normal</option>
+      <option value="vivido">Vívido</option>
+      <option value="cinema">Cinema</option>
+      <option value="quente">Quente</option>
+      <option value="frio">Frio</option>
+      <option value="pb">Preto e branco</option>
+      <option value="hdr-lavado">Corrigir HDR lavado</option>
+      <option value="personalizado" hidden>Personalizado</option>
+    </select>
+  </label>
+  <label class="faixa-ajuste">Brilho <output id="out-brilho">100%</output><input id="img-brilho" type="range" min="50" max="150" step="1"></label>
+  <label class="faixa-ajuste">Contraste <output id="out-contraste">100%</output><input id="img-contraste" type="range" min="50" max="150" step="1"></label>
+  <label class="faixa-ajuste">Saturação (cor) <output id="out-saturacao">100%</output><input id="img-saturacao" type="range" min="0" max="200" step="1"></label>
+  <label class="faixa-ajuste">Tom de cor <output id="out-matiz">0°</output><input id="img-matiz" type="range" min="-180" max="180" step="1"></label>
+  <label class="marcar"><input id="img-hdr" type="checkbox"><span>Realce HDR (mais contraste e cor; corrige imagem lavada)</span></label>
+  <label class="marcar"><input id="img-espelhar" type="checkbox"><span>Espelhar a imagem</span></label>
+  <button id="img-padrao" class="botao-borda botao-largo" type="button">Voltar a imagem ao padrão</button>
+  <p class="dica">O HDR de verdade se liga no console e na placa. Quando o console manda HDR e a placa não converte, a imagem fica lavada: use "Corrigir HDR lavado" ou o Realce HDR.</p>
+
+  <h3 class="sub-painel">Janela</h3>
+  <label class="marcar"><input id="jan-topo" type="checkbox"><span>Manter a janela sempre por cima das outras</span></label>
+  <label class="marcar"><input id="jan-tela-cheia" type="checkbox"><span>Abrir já em tela cheia</span></label>
+
   <div class="bloco-versao">
     <span id="versao">Versão</span>
     <button id="procurar-atualizacao" class="botao-borda" type="button">Procurar atualização</button>

@@ -46,3 +46,10 @@ body.ocioso .barra{opacity:0;transform:translate(-50%,8px);pointer-events:none}
 .painel textarea,.painel input[type=text],.painel input[type=email]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:#1a1a20;color:inherit;font:inherit;resize:vertical}
 .painel .marcar{flex-direction:row;align-items:flex-start;gap:8px}
 .linha-botoes{display:flex;gap:10px}
+
+/* seções Imagem e Janela dos ajustes */
+.sub-painel{margin:18px 0 10px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1);font-size:14px}
+.painel label.faixa-ajuste{display:grid;grid-template-columns:1fr auto;gap:4px}
+.faixa-ajuste output{opacity:.7;font-variant-numeric:tabular-nums}
+.faixa-ajuste input[type=range]{grid-column:1/-1;width:100%;accent-color:#d4ff3f}
+#video.espelhado{transform:scaleX(-1)}

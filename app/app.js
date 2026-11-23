@@ -182,6 +182,25 @@
     if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(function () {});
   }
 
+  // ---------------------------------------------------------------- fale com a Espectro (sugestão ou problema)
+  $('abrir-relato').addEventListener('click', function () { $('painel').hidden = true; $('relato').hidden = false; $('relato-estado').textContent = ''; $('relato-mensagem').focus(); });
+  $('relato-fechar').addEventListener('click', function () { $('relato').hidden = true; });
+  $('relato-enviar').addEventListener('click', function () {
+    var estado = $('relato-estado'), botao = $('relato-enviar');
+    var mensagem = $('relato-mensagem').value.trim();
+    if (mensagem.length < 5) { estado.textContent = 'Escreva um pouco mais na mensagem.'; return; }
+    if (!window.espectro || !window.espectro.enviarRelato) { estado.textContent = 'Envio indisponível nesta versão.'; return; }
+    botao.disabled = true; estado.textContent = 'Enviando...';
+    window.espectro.enviarRelato({
+      tipo: $('relato-tipo').value, mensagem: mensagem, nome: $('relato-nome').value.trim(), email: $('relato-email').value.trim(),
+      detalhes: $('relato-tecnico').checked ? 'Em uso: ' + ($('info').textContent || 'placa não aberta') + ' · qualidade ' + pref.qualidade + ' · volume ' + pref.volume + '%' : '',
+    }).then(function (r) {
+      botao.disabled = false;
+      if (r && r.ok) { estado.textContent = 'Enviado. Obrigado! A equipe da Espectro vai ler.'; $('relato-mensagem').value = ''; }
+      else estado.textContent = (r && r.erro) || 'Não deu para enviar agora. Confira a internet e tente de novo.';
+    });
+  });
+
   // ---------------------------------------------------------------- atualização (só com clique)
   var botaoAtualizar = $('atualizar'), estadoAtualizacao = $('estado-atualizacao');
   function mostrarAtualizacao(e) {
@@ -210,15 +229,16 @@
   }
 
   document.addEventListener('keydown', function (e) {
-    if (e.target && e.target.tagName === 'SELECT') return;
+    // digitando no formulário: as letras não podem virar atalho (M, F)
+    if (e.target && /^(SELECT|INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
     if (e.key === 'm' || e.key === 'M') alternarMudo();
     else if (e.key === 'ArrowUp') { mudarVolume(pref.volume + 5, true); e.preventDefault(); }
     else if (e.key === 'ArrowDown') { mudarVolume(pref.volume - 5, true); e.preventDefault(); }
     else if (e.key === 'f' || e.key === 'F') alternarTelaCheia();
-    else if (e.key === 'Escape') $('painel').hidden = true;
+    else if (e.key === 'Escape') { $('painel').hidden = true; $('relato').hidden = true; }
   });
   window.addEventListener('wheel', function (e) {
-    if (!$('painel').hidden) return;
+    if (!$('painel').hidden || !$('relato').hidden) return;
     mudarVolume(pref.volume + (e.deltaY < 0 ? 5 : -5), true);
   }, { passive: true });
 
@@ -227,7 +247,7 @@
   function acordar() {
     document.body.classList.remove('ocioso');
     clearTimeout(ocioso);
-    ocioso = setTimeout(function () { if (!barra.matches(':hover') && $('painel').hidden) document.body.classList.add('ocioso'); }, 2500);
+    ocioso = setTimeout(function () { if (!barra.matches(':hover') && $('painel').hidden && $('relato').hidden) document.body.classList.add('ocioso'); }, 2500);
   }
   ['mousemove', 'mousedown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, acordar); });
   acordar();

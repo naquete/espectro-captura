@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld('espectro', {
   baixarAtualizacao: () => ipcRenderer.invoke('atualizacao:baixar'),
   instalarAtualizacao: () => ipcRenderer.invoke('atualizacao:instalar'),
   aoAtualizacao: (fn) => { ipcRenderer.on('atualizacao', (_e, estado) => fn(estado)); },
+  enviarRelato: (relato) => ipcRenderer.invoke('relato:enviar', relato),
 });

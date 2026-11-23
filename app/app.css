@@ -40,3 +40,9 @@ body.ocioso .barra{opacity:0;transform:translate(-50%,8px);pointer-events:none}
 .botao-borda:hover{background:rgba(255,255,255,.08)}
 .bloco-versao{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0 14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);font-size:13px}
 .bloco-versao .dica{flex-basis:100%;margin:0}
+
+/* fale com a Espectro (relato) */
+.botao-largo{width:100%;margin-bottom:14px}
+.painel textarea,.painel input[type=text],.painel input[type=email]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:#1a1a20;color:inherit;font:inherit;resize:vertical}
+.painel .marcar{flex-direction:row;align-items:flex-start;gap:8px}
+.linha-botoes{display:flex;gap:10px}

@@ -55,8 +55,30 @@
     <button id="procurar-atualizacao" class="botao-borda" type="button">Procurar atualização</button>
     <p id="estado-atualizacao" class="dica"></p>
   </div>
+  <button id="abrir-relato" class="botao-borda botao-largo" type="button">Enviar sugestão ou relatar problema</button>
   <p class="dica">Atalhos: M mudo · setas para cima e para baixo ou a roda do mouse mudam o volume · F ou duplo clique para tela cheia.</p>
   <button id="fechar-painel" class="botao" type="button">Fechar</button>
+</aside>
+
+<aside id="relato" class="painel" hidden>
+  <h2>Fale com a Espectro</h2>
+  <p class="dica">Sugestão, problema ou ideia: chega direto para a equipe da Espectro Soluções.</p>
+  <label>Assunto
+    <select id="relato-tipo">
+      <option value="sugestao">Sugestão</option>
+      <option value="problema">Problema</option>
+      <option value="outro">Outro</option>
+    </select>
+  </label>
+  <label>Mensagem<textarea id="relato-mensagem" rows="6" maxlength="3000" placeholder="Conte o que aconteceu ou o que você queria que o programa fizesse."></textarea></label>
+  <label>Seu nome (opcional)<input id="relato-nome" type="text" maxlength="120"></label>
+  <label>Seu e-mail para resposta (opcional)<input id="relato-email" type="email" maxlength="160"></label>
+  <label class="marcar"><input id="relato-tecnico" type="checkbox" checked><span>Incluir informações técnicas (versão, Windows e placa em uso)</span></label>
+  <p id="relato-estado" class="dica" role="status"></p>
+  <div class="linha-botoes">
+    <button id="relato-enviar" class="botao" type="button">Enviar</button>
+    <button id="relato-fechar" class="botao-borda" type="button">Fechar</button>
+  </div>
 </aside>
 
 <script src="app.js"></script>

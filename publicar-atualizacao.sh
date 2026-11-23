@@ -13,5 +13,6 @@ SSH="-i $HOME/.ssh/espectro_vps -o IdentitiesOnly=yes -o UserKnownHostsFile=/c/r
 # instalador primeiro; o latest.yml por último (assim ninguém é avisado antes do arquivo estar lá)
 scp $SSH "$EXE" "$EXE.blockmap" $USUARIO@$HOST:/opt/espectro-captura/public/
 scp $SSH "$D/dist/latest.yml" $USUARIO@$HOST:/opt/espectro-captura/public/
-ssh $SSH $USUARIO@$HOST "chmod 644 /opt/espectro-captura/public/*"
+# nome fixo para o botão "Baixar" da página espectrosolucoes.com.br/captura (sempre a versão mais nova)
+ssh $SSH $USUARIO@$HOST "cp -f '/opt/espectro-captura/public/Espectro-Captura-Setup-$V.exe' /opt/espectro-captura/public/Espectro-Captura-Setup.exe && chmod 644 /opt/espectro-captura/public/*"
 echo "publicada a versão $V: $(curl -s https://espectrosolucoes.com.br/atualizacoes/espectro-captura/latest.yml | head -1)"

@@ -5,7 +5,7 @@
 # https://espectrosolucoes.com.br/atualizacoes/espectro-captura/). Pegar a trava "vps" no quadro do Espectro antes.
 set -e
 D="$(cd "$(dirname "$0")" && pwd)"
-V="$(node -p "require('$D/package.json').version")"
+V="$(cd "$D" && node -p "require('./package.json').version")" # (com cd: o node do Windows não entende /c/...)
 EXE="$D/dist/Espectro-Captura-Setup-$V.exe"
 [ -f "$EXE" ] && [ -f "$EXE.blockmap" ] && [ -f "$D/dist/latest.yml" ] || { echo "falta o instalador $V em dist/ (rode npm run instalador)"; exit 1; }
 grep -q "^version: $V$" "$D/dist/latest.yml" || { echo "latest.yml não é da versão $V"; exit 1; }

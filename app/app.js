@@ -176,7 +176,38 @@
   $('sel-qualidade').addEventListener('change', function (e) { pref.qualidade = e.target.value; guardar(); abrir(); });
   $('sel-encaixe').addEventListener('change', function (e) { pref.encaixe = e.target.value; guardar(); video.className = pref.encaixe === 'cover' ? 'cover' : ''; });
   video.addEventListener('dblclick', alternarTelaCheia);
-  function alternarTelaCheia() { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(function () {}); }
+  // tela cheia pela própria janela do programa (o pedido de tela cheia da página o Electron pode ignorar)
+  function alternarTelaCheia() {
+    if (window.espectro && window.espectro.telaCheia) { window.espectro.telaCheia(); return; }
+    if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(function () {});
+  }
+
+  // ---------------------------------------------------------------- atualização (só com clique)
+  var botaoAtualizar = $('atualizar'), estadoAtualizacao = $('estado-atualizacao');
+  function mostrarAtualizacao(e) {
+    var textos = {
+      'procurando': 'Procurando atualização...',
+      'em-dia': 'Você está na versão mais nova.',
+      'disponivel': 'Versão ' + e.versao + ' disponível.',
+      'baixando': 'Baixando a atualização... ' + (e.porcento || 0) + '%',
+      'pronta': 'Atualização baixada. Clique em "Reiniciar e instalar".',
+      'erro': 'Não deu para procurar atualização agora (sem internet?).',
+    };
+    estadoAtualizacao.textContent = textos[e.fase] || '';
+    botaoAtualizar.hidden = !(e.fase === 'disponivel' || e.fase === 'pronta');
+    botaoAtualizar.textContent = e.fase === 'pronta' ? 'Reiniciar e instalar' : 'Atualizar para ' + e.versao;
+    botaoAtualizar.dataset.fase = e.fase;
+    if (e.fase === 'disponivel') mostrarOsd('Atualização disponível: versão ' + e.versao);
+  }
+  if (window.espectro) {
+    window.espectro.versao().then(function (v) { $('versao').textContent = 'Versão ' + v; });
+    window.espectro.aoAtualizacao(mostrarAtualizacao);
+    $('procurar-atualizacao').addEventListener('click', function () { mostrarAtualizacao({ fase: 'procurando' }); window.espectro.procurarAtualizacao(); });
+    botaoAtualizar.addEventListener('click', function () {
+      if (botaoAtualizar.dataset.fase === 'pronta') window.espectro.instalarAtualizacao();
+      else { botaoAtualizar.hidden = true; mostrarAtualizacao({ fase: 'baixando', porcento: 0 }); window.espectro.baixarAtualizacao(); }
+    });
+  }
 
   document.addEventListener('keydown', function (e) {
     if (e.target && e.target.tagName === 'SELECT') return;

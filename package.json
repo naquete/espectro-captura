@@ -1,9 +1,9 @@
 {
   "name": "espectro-captura",
   "productName": "Espectro Captura",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Ver e ouvir qualquer placa de captura com controle de volume de verdade.",
-  "author": "João Flávio de Souza",
+  "author": "Espectro Soluções",
   "license": "UNLICENSED",
   "private": true,
   "main": "main.js",
@@ -19,16 +19,27 @@
     "appId": "br.com.espectrosolucoes.captura",
     "productName": "Espectro Captura",
     "copyright": "Espectro Soluções",
-    "files": ["main.js", "preload.js", "app/**/*"],
-    "win": { "target": "nsis", "icon": "build/icone.png" },
+    "publish": [{ "provider": "generic", "url": "https://espectrosolucoes.com.br/atualizacoes/espectro-captura/" }],
+    "files": [
+      "main.js",
+      "preload.js",
+      "app/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icone.png"
+    },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Espectro Captura"
+      "shortcutName": "Espectro Captura",
+      "artifactName": "Espectro-Captura-Setup-${version}.${ext}"
     }
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
   }
 }
-

@@ -26,6 +26,7 @@
   <span id="volume-num" class="num">100%</span>
   <span class="espaco"></span>
   <span id="info" class="info"></span>
+  <button id="atualizar" class="botao botao-pequeno" type="button" hidden>Atualizar</button>
   <button id="ajustes" class="icone" type="button" title="Ajustes" aria-label="Ajustes">
     <svg viewBox="0 0 24 24"><path d="M12 6a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4 6h8M16 6h4M6 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4 12h2M10 12h10M15 18a2 2 0 1 0 4 0a2 2 0 1 0-4 0M4 18h11M19 18h1"/></svg>
   </button>
@@ -49,6 +50,11 @@
       <option value="cover">Preencher a janela (corta as bordas)</option>
     </select>
   </label>
+  <div class="bloco-versao">
+    <span id="versao">Versão</span>
+    <button id="procurar-atualizacao" class="botao-borda" type="button">Procurar atualização</button>
+    <p id="estado-atualizacao" class="dica"></p>
+  </div>
   <p class="dica">Atalhos: M mudo · setas para cima e para baixo ou a roda do mouse mudam o volume · F ou duplo clique para tela cheia.</p>
   <button id="fechar-painel" class="botao" type="button">Fechar</button>
 </aside>

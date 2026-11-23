@@ -21,4 +21,16 @@ verdade, sem OBS. Pedido do João em 22/11/2026 (a dele é uma Elgato HD60 X).
     npm start                 # abre o programa
     npm run instalador        # gera dist/Espectro Captura Setup <versão>.exe
 
+## Atualização (só com clique)
+
+Ao abrir, o programa só PROCURA versão nova em `https://espectrosolucoes.com.br/atualizacoes/espectro-captura/`
+(pasta `/opt/espectro-captura/public` na VPS do Espectro, rota no Caddy). Havendo, aparece "Atualizar para X" na barra
+e em Ajustes; o clique baixa, e depois "Reiniciar e instalar". Nada é baixado nem instalado sem clique
+(`autoDownload` e `autoInstallOnAppQuit` desligados). Em Ajustes também há "Procurar atualização".
+
+Publicar uma versão nova: aumentar `version` no package.json, `npm run instalador`, pegar a trava `vps` no quadro do
+Espectro e rodar `sh publicar-atualizacao.sh`.
+
+Quem instalou a 1.0.3 ou antes precisa instalar a 1.0.4 uma vez à mão (elas não tinham o botão).
+
 Teste sem janela: `ESPECTRO_CAPTURA_TESTE=<arquivo.png> npx electron .` abre escondido, tira um print e fecha.

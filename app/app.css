@@ -35,3 +35,8 @@ body.ocioso .barra{opacity:0;transform:translate(-50%,8px);pointer-events:none}
 .painel select{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:#1a1a20;color:inherit;font:inherit}
 .dica{font-size:12px;opacity:.6}
 .botao{padding:9px 18px;border:0;border-radius:10px;background:#d4ff3f;color:#111;font:inherit;font-weight:600;cursor:pointer}
+.botao-pequeno{padding:6px 12px;font-size:13px;white-space:nowrap}
+.botao-borda{padding:7px 12px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.botao-borda:hover{background:rgba(255,255,255,.08)}
+.bloco-versao{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0 14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);font-size:13px}
+.bloco-versao .dica{flex-basis:100%;margin:0}

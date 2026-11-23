@@ -38,6 +38,7 @@
     imagem: { estilo: 'normal', brilho: 100, contraste: 100, saturacao: 100, matiz: 0, hdr: false, espelhar: false, nitidez: 0, retro: false, crt: false },
     som: { atraso: 0, eq: 'normal', grave: 0, medio: 0, agudo: 0, noturno: false, balanco: 0, mono: false, estabilidade: 'equilibrado', amplitude: 100 },
     gravar: { replay: false, duracao: 30 },
+    stream: { ligado: false, saida: '' },
     janela: { topo: false, telaCheia: false, windows: false, atalhosGlobais: true },
     perfis: {},
   };
@@ -108,6 +109,8 @@
     no.ed.gain.setTargetAtTime(b, agora, 0.02); no.de.gain.setTargetAtTime(b, agora, 0.02);
     // mono: junta os dois canais num só e o Chrome espalha de volta para os dois lados
     no.mono.channelCount = s.mono ? 1 : 2; no.mono.channelCountMode = s.mono ? 'explicit' : 'max'; no.mono.channelInterpretation = 'speakers';
+    // a stream acompanha só o atraso (sincronia com a imagem)
+    if (stream && stream.atraso) stream.atraso.delayTime.setTargetAtTime(s.atraso / 1000, stream.ctx.currentTime, 0.02);
   }
   function aplicarVolume() {
     var v = pref.mudo ? 0 : pref.volume / 100;
@@ -153,6 +156,7 @@
     [streamVideo, streamAudio].forEach(function (s) { if (s) s.getTracks().forEach(function (x) { x.stop(); }); });
     streamVideo = streamAudio = null;
     if (fonte) { try { fonte.disconnect(); } catch (e) { /* já solto */ } fonte = null; }
+    pararStream();
   }
   function mensagem(texto, comBotao) {
     $('mensagem').hidden = !texto; $('mensagem-texto').textContent = texto || '';
@@ -232,7 +236,15 @@
       $('info').textContent = infoPlaca;
       preencher($('sel-video'), d.video, cam.deviceId, t('Nenhuma placa encontrada'));
       preencher($('sel-audio'), d.audio, mic && mic.deviceId, t('Nenhuma entrada de som'));
-      preencher($('sel-saida'), [{ deviceId: '', label: t('Padrão do Windows') }].concat(d.saida.filter(function (x) { return x.deviceId !== 'default' && x.deviceId !== 'communications'; })), pref.saida, t('Padrão do Windows'));
+      var saidas = [{ deviceId: '', label: t('Padrão do Windows') }].concat(d.saida.filter(function (x) { return x.deviceId !== 'default' && x.deviceId !== 'communications'; }));
+      preencher($('sel-saida'), saidas, pref.saida, t('Padrão do Windows'));
+      // saída da stream: se ainda não foi escolhida, sugere o cabo virtual (VB-Cable) quando ele existe
+      if (!pref.stream.saida) {
+        var cabo = saidas.find(function (x) { return /cable input|vb-audio|voicemeeter input/i.test(x.label || ''); });
+        if (cabo) { pref.stream.saida = cabo.deviceId; guardar(); }
+      }
+      preencher($('stream-saida'), saidas, pref.stream.saida, t('Padrão do Windows'));
+      if (mic) await aplicarStream();
       preencherQualidades();
       mensagem('');
       semSinal.reiniciar();
@@ -251,6 +263,40 @@
   }
   async function aplicarSaida() {
     if (ctx && typeof ctx.setSinkId === 'function') { try { await ctx.setSinkId(pref.saida || ''); } catch (e) { /* fica na saída padrão */ } }
+    avisoStream();
+  }
+
+  // ---------------------------------------------------------------- som para a stream (pedido do João, 23/11/2026)
+  // Um segundo caminho, com contexto próprio, direto da placa: só o atraso (sincronia com a imagem), sem volume, mudo,
+  // equalizador, mono nem balanço. Vai para outra saída (ex.: o VB-Cable), e o OBS pega de lá sempre a 100%.
+  var stream = { ctx: null, fonte: null, atraso: null };
+  function pararStream() {
+    if (stream.ctx) { try { stream.ctx.close(); } catch (e) { /* já fechado */ } }
+    stream = { ctx: null, fonte: null, atraso: null };
+  }
+  async function aplicarStream() {
+    var s = pref.stream;
+    $('stream-ligado').checked = Boolean(s.ligado);
+    $('stream-saida').disabled = !s.ligado;
+    if (!s.ligado || !streamAudio || !streamAudio.getAudioTracks().length) { pararStream(); avisoStream(); return; }
+    if (!stream.ctx) {
+      stream.ctx = new AudioContext({ latencyHint: LATENCIAS[pref.som.estabilidade] || LATENCIAS.equilibrado, sampleRate: 48000 });
+      stream.fonte = stream.ctx.createMediaStreamSource(streamAudio);
+      stream.atraso = stream.ctx.createDelay(1);
+      stream.fonte.connect(stream.atraso); stream.atraso.connect(stream.ctx.destination);
+    }
+    stream.atraso.delayTime.setTargetAtTime(pref.som.atraso / 1000, stream.ctx.currentTime, 0.02);
+    if (typeof stream.ctx.setSinkId === 'function') {
+      try { await stream.ctx.setSinkId(s.saida || ''); } catch (e) { mostrarOsd(t('Não consegui usar a saída da stream escolhida')); }
+    }
+    if (stream.ctx.state === 'suspended') { try { await stream.ctx.resume(); } catch (e) { /* tenta de novo no próximo clique */ } }
+    avisoStream();
+  }
+  function avisoStream() {
+    var aviso = $('stream-aviso');
+    var mesma = pref.stream.ligado && (pref.stream.saida || '') === (pref.saida || '');
+    aviso.hidden = !mesma;
+    aviso.textContent = mesma ? t('A saída da stream é a mesma do fone: o som vai tocar duas vezes. Escolha outra, como o "CABLE Input".') : '';
   }
 
   // ---------------------------------------------------------------- imagem: filtro, nitidez, retrô, TV de tubo
@@ -445,6 +491,12 @@
   $('sel-video').addEventListener('change', function (e) { pref.video = e.target.value; guardar(); abrir(); });
   $('sel-audio').addEventListener('change', function (e) { pref.audio = e.target.value; guardar(); abrir(); });
   $('sel-saida').addEventListener('change', function (e) { pref.saida = e.target.value; guardar(); aplicarSaida(); });
+  $('stream-ligado').addEventListener('change', function (e) {
+    pref.stream.ligado = e.target.checked; guardar(); aplicarStream();
+    mostrarOsd(e.target.checked ? t('Som para a stream ligado') : t('Som para a stream desligado'));
+  });
+  $('stream-saida').addEventListener('change', function (e) { pref.stream.saida = e.target.value; guardar(); aplicarStream(); });
+  $('stream-ligado').checked = Boolean(pref.stream.ligado); $('stream-saida').disabled = !pref.stream.ligado;
   $('sel-qualidade').addEventListener('change', function (e) { pref.qualidade = e.target.value; guardar(); abrir(); });
   video.addEventListener('dblclick', alternarTelaCheia);
   // tela cheia pela própria janela do programa (o pedido de tela cheia da página o Electron pode ignorar)
@@ -562,6 +614,7 @@
     t: t, pref: pref, guardar: guardar, osd: mostrarOsd, video: video,
     trilhaVideo: function () { return streamVideo && streamVideo.getVideoTracks()[0]; },
     trilhaAudio: function () { return streamAudio && streamAudio.getAudioTracks()[0]; },
+    estadoStream: function () { return stream.ctx ? { estado: stream.ctx.state, saida: stream.ctx.sinkId, atrasoMs: Math.round(stream.atraso.delayTime.value * 1000) } : null; },
     filtro: function () { return filtroDaImagem(false); },
   };
 

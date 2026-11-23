@@ -157,6 +157,14 @@
     <label class="faixa-ajuste"><span data-t>Balanço (esquerda e direita)</span> <output id="out-balanco">0</output><input id="som-balanco" type="range" min="-100" max="100" step="5"></label>
     <label class="marcar"><input id="som-mono" type="checkbox"><span data-t>Som mono (para quem joga com um fone só)</span></label>
     <button id="som-padrao" class="botao-borda botao-largo" type="button" data-t>Voltar o som ao padrão</button>
+
+    <h3 class="sub-titulo" data-t>Som para a stream (OBS)</h3>
+    <label class="marcar"><input id="stream-ligado" type="checkbox"><span data-t>Mandar o som do jogo a 100% para outra saída</span></label>
+    <label><span data-t>Saída da stream</span>
+      <select id="stream-saida"></select>
+    </label>
+    <p id="stream-aviso" class="dica aviso" hidden></p>
+    <p class="dica" data-t>Vai sempre a 100%, sem o volume, o mudo e o equalizador daqui: eles ficam só para o seu fone. Só o atraso do som vale também, para não perder a sincronia com a imagem. Para o OBS receber separado, instale um cabo virtual gratuito como o VB-Cable, escolha aqui "CABLE Input" e, no OBS, adicione "Captura de entrada de áudio" com "CABLE Output". Se o OBS também captura o som deste programa (captura de áudio do aplicativo), deixe essa fonte muda.</p>
   </section>
 
   <section class="sec-aba" data-sec="gravar" hidden>

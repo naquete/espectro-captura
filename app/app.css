@@ -88,3 +88,6 @@ body.ocioso .barra{opacity:0;transform:translate(-50%,8px);pointer-events:none}
 .painel::-webkit-scrollbar-track{background:transparent}
 .painel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:8px}
 .painel::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3)}
+/* som para a stream */
+.painel .sub-titulo{margin:18px 0 2px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1);font-size:14px;font-weight:600}
+.painel .dica.aviso{opacity:1;color:#ffcf5c}

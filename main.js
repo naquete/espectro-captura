@@ -5,6 +5,10 @@ const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
 const { autoUpdater } = require('electron-updater');
+const complementos = require('./complementos');
+
+// complemento:// (IA do Suavizar movimento, baixada à parte) precisa ser registrado antes do app ficar pronto
+complementos.registrarEsquema();
 
 // Teste sem janela (ESPECTRO_CAPTURA_TESTE=<arquivo.png>): abre escondido, roda o roteiro de teste, tira um print e fecha.
 const TESTE = process.env.ESPECTRO_CAPTURA_TESTE || '';
@@ -12,6 +16,9 @@ if (TESTE) {
   // testes nunca mexem nas preferências de quem usa o programa nem tocam som nas caixas dela
   app.setPath('userData', path.join(os.tmpdir(), 'espectro-captura-teste'));
   app.commandLine.appendSwitch('mute-audio');
+  // janela de teste fora da tela: sem isto o Windows a considera coberta e o Chromium quase para de desenhar
+  app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
   // ESPECTRO_CAPTURA_TESTE_FALSO=1: câmera e microfone falsos do Chromium (testa gravação e som sem a placa)
   if (process.env.ESPECTRO_CAPTURA_TESTE_FALSO) {
     app.commandLine.appendSwitch('use-fake-device-for-media-stream');
@@ -232,6 +239,9 @@ function criarJanela() {
     if (entrada.key === 'F11') janela.setFullScreen(!janela.isFullScreen());
     if (entrada.key === 'Escape' && janela.isFullScreen()) janela.setFullScreen(false);
   });
+  // ESPECTRO_CAPTURA_TESTE_FORA=1: janela de teste aberta fora da área visível, sem pegar o foco (o Windows só desenha
+  // de verdade janela mostrada; escondida, o vídeo e as animações quase param)
+  if (TESTE && process.env.ESPECTRO_CAPTURA_TESTE_FORA) { janela.setPosition(-4000, -4000); janela.showInactive(); }
   if (TESTE) {
     setTimeout(async () => {
       // ESPECTRO_CAPTURA_TESTE_ROTEIRO=<arquivo.js>: corpo de uma função assíncrona rodada na tela; o retorno vai para o log
@@ -265,6 +275,7 @@ app.whenReady().then(() => {
   const liberadas = new Set(['media', 'fullscreen']);
   session.defaultSession.setPermissionRequestHandler((wc, permissao, ok) => ok(liberadas.has(permissao) && ehLocal(wc.getURL())));
   session.defaultSession.setPermissionCheckHandler((wc, permissao) => liberadas.has(permissao) && ehLocal(wc ? wc.getURL() : ''));
+  complementos.ativar(enviarParaTela);
   criarJanela();
   montarBandeja();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) criarJanela(); });

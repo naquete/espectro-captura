@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; worker-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' complemento: 'wasm-unsafe-eval'; connect-src complemento:; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; worker-src 'self' blob:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Espectro Captura</title>
 <link rel="stylesheet" href="app.css">
@@ -126,7 +126,21 @@
     <label class="marcar"><input id="img-crt" type="checkbox"><span data-t>Efeito de TV de tubo (linhas e bordas escuras)</span></label>
     <label class="marcar"><input id="img-espelhar" type="checkbox"><span data-t>Espelhar a imagem</span></label>
     <button id="img-padrao" class="botao-borda botao-largo" type="button" data-t>Voltar a imagem ao padrão</button>
+
     <p class="dica" data-t>O HDR de verdade se liga no console e na placa. Quando o console manda HDR e a placa não converte, a imagem fica lavada: use "Corrigir HDR lavado" ou o Realce HDR. A nitidez pode pesar em PC mais fraco.</p>
+
+    <p class="sub-titulo" data-t>Suavizar movimento (experimental)</p>
+    <p class="dica" data-t>Gera um quadro novo entre cada dois quadros do jogo com uma IA na placa de vídeo: 30 fps viram 60. Deixa o movimento mais fluido, mas soma uns 35 ms de atraso nos comandos. Precisa de placa de vídeo recente (RTX 30, 40, 50 ou AMD equivalente).</p>
+    <div id="suave-baixar" hidden>
+      <button id="suave-baixar-botao" class="botao botao-largo" type="button">Baixar o complemento</button>
+      <p id="suave-progresso" class="dica" role="status"></p>
+    </div>
+    <div id="suave-pronto" hidden>
+      <label class="marcar"><input id="suave-ligado" type="checkbox"><span data-t>Ligar o Suavizar movimento</span></label>
+      <p id="suave-estado" class="dica" role="status"></p>
+      <button id="suave-remover" class="botao-borda" type="button" data-t>Remover o complemento</button>
+    </div>
+    <p class="dica" data-t>O complemento não vem no instalador: só baixa se você quiser. Usa a IA RIFE (licença MIT) e o ONNX Runtime (licença MIT).</p>
   </section>
 
   <section class="sec-aba" data-sec="som" hidden>

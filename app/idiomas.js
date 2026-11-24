@@ -167,6 +167,26 @@
     "Clique aqui, aperte F ou dê dois cliques na imagem. A barra some sozinha quando o mouse fica parado; é só mexer que ela volta.": ["Click here, press F or double-click the picture. The bar hides by itself when the mouse stops; move it and the bar comes back.","Haz clic aquí, pulsa F o haz doble clic en la imagen. La barra se oculta sola cuando el ratón se queda quieto; muévelo y vuelve."],
     "Tudo pronto": ["All set","Todo listo"],
     "Bom jogo! Para ver este tutorial de novo, abra Ajustes > Programa > Ver o tutorial.": ["Have a good game! To see this tutorial again, open Settings > App > See the tutorial.","¡Buen juego! Para ver este tutorial de nuevo, abre Ajustes > Programa > Ver el tutorial."],
+    // Suavizar movimento (1.2.0)
+    "Suavizar movimento (experimental)": ["Smooth motion (experimental)","Suavizar movimiento (experimental)"],
+    "Gera um quadro novo entre cada dois quadros do jogo com uma IA na placa de vídeo: 30 fps viram 60. Deixa o movimento mais fluido, mas soma uns 35 ms de atraso nos comandos. Precisa de placa de vídeo recente (RTX 30, 40, 50 ou AMD equivalente).": ["Creates a new frame between every two game frames with an AI on your graphics card: 30 fps become 60. Motion gets smoother, but it adds about 35 ms of input lag. Needs a recent graphics card (RTX 30, 40, 50 or an AMD equivalent).","Crea un cuadro nuevo entre cada dos cuadros del juego con una IA en la tarjeta de video: 30 fps se vuelven 60. El movimiento queda más fluido, pero suma unos 35 ms de retraso en los controles. Necesita una tarjeta de video reciente (RTX 30, 40, 50 o AMD equivalente)."],
+    "Ligar o Suavizar movimento": ["Turn on Smooth motion","Activar Suavizar movimiento"],
+    "Remover o complemento": ["Remove the add-on","Quitar el complemento"],
+    "O complemento não vem no instalador: só baixa se você quiser. Usa a IA RIFE (licença MIT) e o ONNX Runtime (licença MIT).": ["The add-on is not in the installer: it only downloads if you want it. It uses the RIFE AI (MIT license) and ONNX Runtime (MIT license).","El complemento no viene en el instalador: solo se descarga si lo quieres. Usa la IA RIFE (licencia MIT) y ONNX Runtime (licencia MIT)."],
+    "Baixando...": ["Downloading...","Descargando..."],
+    "Baixar o complemento ({0} MB)": ["Download the add-on ({0} MB)","Descargar el complemento ({0} MB)"],
+    "A imagem já chega a {0} fps: passa direto, sem quadros gerados.": ["The picture already arrives at {0} fps: it goes straight through, no generated frames.","La imagen ya llega a {0} fps: pasa directo, sin cuadros generados."],
+    "A placa de vídeo não deu conta ({0} ms por quadro): mostrando sem quadros gerados.": ["The graphics card couldn't keep up ({0} ms per frame): showing without generated frames.","La tarjeta de video no da abasto ({0} ms por cuadro): se muestra sin cuadros generados."],
+    "A IA falhou neste quadro. Se repetir, desligue e ligue de novo.": ["The AI failed on this frame. If it keeps happening, turn it off and on again.","La IA falló en este cuadro. Si se repite, apágalo y vuelve a encenderlo."],
+    "Iniciando...": ["Starting...","Iniciando..."],
+    "Jogo a {0} fps, tela a {1} fps. IA: {2} ms por quadro.": ["Game at {0} fps, screen at {1} fps. AI: {2} ms per frame.","Juego a {0} fps, pantalla a {1} fps. IA: {2} ms por cuadro."],
+    "Carregando a IA na placa de vídeo...": ["Loading the AI on the graphics card...","Cargando la IA en la tarjeta de video..."],
+    "Suavizar movimento ligado": ["Smooth motion on","Suavizar movimiento activado"],
+    "Suavizar movimento desligado": ["Smooth motion off","Suavizar movimiento desactivado"],
+    "Este PC não tem WebGPU (placa de vídeo ou driver antigo): o Suavizar movimento não funciona aqui.": ["This PC doesn't have WebGPU (old graphics card or driver): Smooth motion doesn't work here.","Esta PC no tiene WebGPU (tarjeta de video o driver antiguo): Suavizar movimiento no funciona aquí."],
+    "Não deu para carregar a IA: {0}": ["Couldn't load the AI: {0}","No se pudo cargar la IA: {0}"],
+    "O download falhou: {0}": ["The download failed: {0}","La descarga falló: {0}"],
+    "Baixando: {0} de {1} MB": ["Downloading: {0} of {1} MB","Descargando: {0} de {1} MB"],
   };
   var idioma = 'pt';
   function t(texto) {

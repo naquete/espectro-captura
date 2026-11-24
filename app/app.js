@@ -39,6 +39,7 @@
     som: { atraso: 0, eq: 'normal', grave: 0, medio: 0, agudo: 0, noturno: false, balanco: 0, mono: false, estabilidade: 'equilibrado', amplitude: 100 },
     gravar: { replay: false, duracao: 30 },
     stream: { ligado: false, saida: '' },
+    suavizar: { ligado: false },
     janela: { topo: false, telaCheia: false, windows: false, atalhosGlobais: true },
     perfis: {},
   };
@@ -97,7 +98,7 @@
     $('som-balanco').value = String(s.balanco); $('out-balanco').textContent = s.balanco === 0 ? '0' : (s.balanco < 0 ? 'E ' : 'D ') + Math.abs(s.balanco);
     if (!no) return;
     var agora = ctx.currentTime;
-    no.atraso.delayTime.setTargetAtTime(s.atraso / 1000, agora, 0.02);
+    no.atraso.delayTime.setTargetAtTime((s.atraso + (atrasoSuave || 0)) / 1000, agora, 0.02);
     no.grave.gain.setTargetAtTime(s.grave, agora, 0.02); no.medio.gain.setTargetAtTime(s.medio, agora, 0.02); no.agudo.gain.setTargetAtTime(s.agudo, agora, 0.02);
     // modo noturno: comprime os picos (explosões) e sobe o resto (falas); desligado, o compressor fica neutro
     no.noturno.threshold.value = s.noturno ? -32 : 0; no.noturno.ratio.value = s.noturno ? 8 : 1;
@@ -110,7 +111,7 @@
     // mono: junta os dois canais num só e o Chrome espalha de volta para os dois lados
     no.mono.channelCount = s.mono ? 1 : 2; no.mono.channelCountMode = s.mono ? 'explicit' : 'max'; no.mono.channelInterpretation = 'speakers';
     // a stream acompanha só o atraso (sincronia com a imagem)
-    if (stream && stream.atraso) stream.atraso.delayTime.setTargetAtTime(s.atraso / 1000, stream.ctx.currentTime, 0.02);
+    if (stream && stream.atraso) stream.atraso.delayTime.setTargetAtTime((s.atraso + (atrasoSuave || 0)) / 1000, stream.ctx.currentTime, 0.02);
   }
   function aplicarVolume() {
     var v = pref.mudo ? 0 : pref.volume / 100;
@@ -285,7 +286,7 @@
       stream.atraso = stream.ctx.createDelay(1);
       stream.fonte.connect(stream.atraso); stream.atraso.connect(stream.ctx.destination);
     }
-    stream.atraso.delayTime.setTargetAtTime(pref.som.atraso / 1000, stream.ctx.currentTime, 0.02);
+    stream.atraso.delayTime.setTargetAtTime((pref.som.atraso + (atrasoSuave || 0)) / 1000, stream.ctx.currentTime, 0.02);
     if (typeof stream.ctx.setSinkId === 'function') {
       try { await stream.ctx.setSinkId(s.saida || ''); } catch (e) { mostrarOsd(t('Não consegui usar a saída da stream escolhida')); }
     }
@@ -333,6 +334,11 @@
     $('img-estilo').value = ESTILOS[i.estilo] ? i.estilo : 'personalizado';
     aplicarEnquadramento();
   }
+  function copiarJeitoDoVideo() {
+    if (!suave || !suave.canvas) return;
+    suave.canvas.style.cssText = video.style.cssText;
+    suave.canvas.className = video.className;
+  }
   CAMPOS_IMG.forEach(function (c) {
     $('img-' + c[0]).addEventListener('input', function (e) { pref.imagem[c[0]] = Number(e.target.value); pref.imagem.estilo = 'personalizado'; aplicarImagem(); guardar(); });
   });
@@ -364,6 +370,7 @@
     document.body.classList.toggle('arrastavel', z > 1);
     $('sel-proporcao').value = p; $('sel-encaixe').value = pref.encaixe;
     $('zoom').value = String(pref.zoom); $('out-zoom').textContent = pref.zoom + '%';
+    copiarJeitoDoVideo();
   }
   window.addEventListener('resize', aplicarEnquadramento);
   $('sel-encaixe').addEventListener('change', function (e) { pref.encaixe = e.target.value; guardar(); aplicarEnquadramento(); });
@@ -681,6 +688,80 @@
   $('ver-codigo').addEventListener('click', function () { if (window.espectro && window.espectro.abrirCodigo) window.espectro.abrirCodigo(); });
   window.addEventListener('resize', function () { if (tourAberto()) posicionarTour(); });
 
+  // ---------------------------------------------------------------- Suavizar movimento (complemento baixado à parte)
+  var COMPLEMENTO = 'suavizar-1';
+  var atrasoSuave = 0;
+  var suave = { motor: null, canvas: null, ligando: false };
+  function mb(bytes) { return Math.round(bytes / 1048576); }
+  function mostrarComplemento(e) {
+    var instalado = e && e.instalado;
+    $('suave-baixar').hidden = Boolean(instalado); $('suave-pronto').hidden = !instalado;
+    if (!instalado && e) $('suave-baixar-botao').textContent = e.baixando ? t('Baixando...') : t('Baixar o complemento ({0} MB)', mb(e.totalBytes || 0));
+    $('suave-baixar-botao').disabled = Boolean(e && e.baixando);
+  }
+  function conferirComplemento() {
+    if (!window.espectro || !window.espectro.complementoEstado) { $('suave-baixar').hidden = true; $('suave-pronto').hidden = true; return Promise.resolve(null); }
+    return window.espectro.complementoEstado(COMPLEMENTO).then(function (e) { mostrarComplemento(e); return e; });
+  }
+  function textoEstadoSuave(s) {
+    if (s.modo === 'direto') return t('A imagem já chega a {0} fps: passa direto, sem quadros gerados.', s.fonteFps);
+    if (s.modo === 'lento') return t('A placa de vídeo não deu conta ({0} ms por quadro): mostrando sem quadros gerados.', s.iaMs);
+    if (s.modo === 'erro') return t('A IA falhou neste quadro. Se repetir, desligue e ligue de novo.');
+    if (s.modo === 'iniciando') return t('Iniciando...');
+    return t('Jogo a {0} fps, tela a {1} fps. IA: {2} ms por quadro.', s.fonteFps, s.saidaFps, s.iaMs);
+  }
+  function ligarSuave() {
+    if (suave.motor || suave.ligando) return;
+    suave.ligando = true;
+    $('suave-estado').textContent = t('Carregando a IA na placa de vídeo...');
+    var tela = document.createElement('canvas');
+    tela.id = 'suave';
+    $('palco').appendChild(tela);
+    suave.canvas = tela; copiarJeitoDoVideo();
+    import('./suavizar.js').then(function (mod) {
+      return mod.criarSuavizador({ video: video, canvas: tela, aoEstado: function (s) { $('suave-estado').textContent = textoEstadoSuave(s); } });
+    }).then(function (motor) {
+      suave.motor = motor; suave.ligando = false;
+      atrasoSuave = 35; aplicarSom();
+      mostrarOsd(t('Suavizar movimento ligado'));
+    }).catch(function (e) {
+      console.error('suavizar', e);
+      suave.ligando = false; tela.remove(); suave.canvas = null;
+      pref.suavizar.ligado = false; $('suave-ligado').checked = false; guardar();
+      $('suave-estado').textContent = String(e && e.message) === 'sem-webgpu'
+        ? t('Este PC não tem WebGPU (placa de vídeo ou driver antigo): o Suavizar movimento não funciona aqui.')
+        : t('Não deu para carregar a IA: {0}', String(e && e.message || e).slice(0, 160));
+    });
+  }
+  function desligarSuave() {
+    if (suave.motor) suave.motor.parar();
+    suave.motor = null;
+    if (suave.canvas) suave.canvas.remove();
+    suave.canvas = null;
+    if (atrasoSuave) { atrasoSuave = 0; aplicarSom(); }
+    $('suave-estado').textContent = '';
+  }
+  $('suave-ligado').addEventListener('change', function (e) {
+    pref.suavizar.ligado = e.target.checked; guardar();
+    if (e.target.checked) ligarSuave(); else { desligarSuave(); mostrarOsd(t('Suavizar movimento desligado')); }
+  });
+  $('suave-baixar-botao').addEventListener('click', function () {
+    $('suave-baixar-botao').disabled = true; $('suave-baixar-botao').textContent = t('Baixando...');
+    window.espectro.complementoBaixar(COMPLEMENTO).then(function (r) {
+      if (!r || !r.ok) { $('suave-progresso').textContent = t('O download falhou: {0}', (r && r.erro) || ''); conferirComplemento(); return; }
+      $('suave-progresso').textContent = '';
+      conferirComplemento();
+    });
+  });
+  $('suave-remover').addEventListener('click', function () {
+    desligarSuave(); pref.suavizar.ligado = false; $('suave-ligado').checked = false; guardar();
+    window.espectro.complementoRemover(COMPLEMENTO).then(conferirComplemento);
+  });
+  if (window.espectro && window.espectro.aoComplemento) window.espectro.aoComplemento(function (e) {
+    if (e.id !== COMPLEMENTO) return;
+    if (e.fase === 'baixando') $('suave-progresso').textContent = t('Baixando: {0} de {1} MB', mb(e.feito), mb(e.total));
+  });
+
   // ponte para gravacao.js (print, replay e vídeo)
   window.EC = {
     t: t, pref: pref, guardar: guardar, osd: mostrarOsd, video: video,
@@ -689,6 +770,8 @@
     estadoStream: function () { return stream.ctx ? { estado: stream.ctx.state, saida: stream.ctx.sinkId, atrasoMs: Math.round(stream.atraso.delayTime.value * 1000) } : null; },
     filtro: function () { return filtroDaImagem(false); },
     tutorial: abrirTour,
+    suavizar: function () { return { motor: Boolean(suave.motor), estado: $('suave-estado').textContent, atrasoSom: atrasoSuave }; },
+    suavizarAmostra: function () { return suave.motor ? suave.motor.amostra() : Promise.resolve(null); },
   };
 
   $('sel-idioma').value = pref.idioma;
@@ -696,5 +779,7 @@
   aplicarVolume(); aplicarSom(); aplicarImagem(); aplicarFps(); aplicarPerfis();
   aplicarJanela(true);
   abrir();
+  $('suave-ligado').checked = Boolean(pref.suavizar.ligado);
+  conferirComplemento().then(function (e) { if (e && e.instalado && pref.suavizar.ligado) ligarSuave(); });
   if (!pref.tutorialVisto) setTimeout(abrirTour, 600);
 })();

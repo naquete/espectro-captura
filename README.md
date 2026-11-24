@@ -17,14 +17,15 @@ Portuguese and Spanish.*
 - **Som:** volume de 0 a 200%, saída escolhida, estabilidade do som (latência), atraso do som, equalizador com estilos
   prontos, modo noturno, ampliar estéreo, balanço e mono.
 - **Imagem:** brilho, contraste, saturação, tom, nitidez, Realce HDR, modo retrô (pixels nítidos), efeito de TV de tubo
-  e espelhar.
+  e espelhar. **Suavizar movimento (experimental):** uma IA na placa de vídeo gera o quadro do meio (30 fps viram 60),
+  com um complemento que só baixa se a pessoa quiser.
 - **Gravar:** print (P), replay dos últimos 15 segundos a 5 minutos (R) e gravação em MP4 (G), em Imagens e Vídeos.
 - **Programa:** português, inglês e espanhol; sempre por cima; abrir em tela cheia; abrir com o Windows; ícone perto do
   relógio; atalhos globais (Ctrl+Alt+tecla); perfis; atualização só com clique; relato de problema e sugestão de dentro
   do programa.
 
-Nada de imagem ou som sai do computador. O programa só se conecta para procurar versão nova e quando a pessoa escolhe
-mandar um relato.
+Nada de imagem ou som sai do computador. O programa só se conecta para procurar versão nova, para baixar o complemento
+do Suavizar movimento (só quando a pessoa pede) e quando a pessoa escolhe mandar um relato.
 
 ## Como é feito
 
@@ -40,6 +41,26 @@ mono, volume). Gravação com WebCodecs (H.264 na placa de vídeo e AAC) e o MP4
 | `app/app.js` | placa, som, imagem, ajustes, perfis |
 | `app/gravacao.js` | print, replay e gravação |
 | `app/idiomas.js` | textos em inglês e espanhol |
+| `app/suavizar.js` | Suavizar movimento: descarta quadro repetido, roda a IA e monta o quadro do meio (WebGPU) |
+| `complementos.js` | complemento baixado à parte: download conferido por SHA-256 e o endereço privado `complemento://` |
+
+## Complemento: Suavizar movimento
+
+Não vem no instalador. Em Ajustes > Imagem, a pessoa baixa (48 MB) do servidor da Espectro; cada arquivo só é usado se o
+SHA-256 bater com o de `complementos.js`. Fica na pasta de dados do programa e sai com "Remover o complemento".
+
+- **IA:** RIFE v4.6 ([Practical-RIFE](https://github.com/hzwer/Practical-RIFE), MIT), em ONNX pelo
+  [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) (GPL-3.0), cortado para devolver a grade de amostragem e a máscara
+  de mistura em vez da imagem pronta. A IA calcula o movimento em 960x544 (13 a 16 ms numa RTX 5070) e o quadro do meio
+  é montado em resolução cheia pela placa de vídeo.
+- **Motor:** [ONNX Runtime Web](https://onnxruntime.ai) 1.31.1 (MIT) com WebGPU.
+- **Ritmo:** quadro repetido (o PS5 manda 30 fps num sinal de 60 Hz) é descartado; o quadro gerado aparece assim que fica
+  pronto e o real meio período depois. Fonte com mais de ~45 quadros diferentes por segundo passa direto. O som ganha
+  35 ms de atraso para continuar junto da imagem.
+- O LEIA-ME do complemento traz as licenças.
+- Teste: `ESPECTRO_CAPTURA_TESTE_FORA=1` abre a janela de teste fora da tela, sem pegar o foco (escondida, o Windows
+  quase para de desenhar e o ritmo não dá para medir); `window.EC.suavizarAmostra()` devolve o último par e o quadro
+  gerado entre eles.
 
 ## Rodar e gerar o instalador
 

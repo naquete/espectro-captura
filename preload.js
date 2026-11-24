@@ -21,4 +21,9 @@ contextBridge.exposeInMainWorld('espectro', {
   aoFecharPedido: (fn) => { ipcRenderer.on('fechar-pedido', () => fn()); },
   podeFechar: () => ipcRenderer.invoke('pode-fechar'),
   abrirCodigo: () => ipcRenderer.invoke('abrir-codigo'),
+  // complementos baixados à parte (Suavizar movimento)
+  complementoEstado: (id) => ipcRenderer.invoke('complemento:estado', id),
+  complementoBaixar: (id) => ipcRenderer.invoke('complemento:baixar', id),
+  complementoRemover: (id) => ipcRenderer.invoke('complemento:remover', id),
+  aoComplemento: (fn) => { ipcRenderer.on('complemento', (_e, estado) => fn(estado)); },
 });

@@ -97,6 +97,8 @@ async function procurar() {
   try { await autoUpdater.checkForUpdates(); } catch { avisarAtualizacao({ fase: 'erro' }); }
 }
 ipcMain.handle('versao', () => app.getVersion());
+// "Ver o código": abre só este endereço fixo no navegador (a página nunca escolhe o link)
+ipcMain.handle('abrir-codigo', () => shell.openExternal('https://github.com/naquete/espectro-captura'));
 ipcMain.handle('atualizacao:procurar', () => procurar());
 ipcMain.handle('atualizacao:baixar', () => autoUpdater.downloadUpdate().catch(() => avisarAtualizacao({ fase: 'erro' })));
 // instala em silêncio (sem as telas do instalador) e abre o programa de novo sozinho

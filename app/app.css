@@ -90,4 +90,23 @@ body.ocioso .barra{opacity:0;transform:translate(-50%,8px);pointer-events:none}
 .painel::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3)}
 /* som para a stream */
 .painel .sub-titulo{margin:18px 0 2px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1);font-size:14px;font-weight:600}
-.painel .dica.aviso{opacity:1;color:#ffcf5c}
+.painel .dica.aviso{opacity:1;color:#ffcf5c}/* código aberto, em Ajustes > Programa */
+.bloco-aberto{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.bloco-aberto .dica{flex:1;margin:0}
+/* tutorial: fundo escuro com um recorte em volta do que está sendo explicado */
+.tour{position:fixed;inset:0;z-index:50}
+.tour-fundo{position:absolute;inset:0;background:rgba(0,0,0,.66)}
+.tour-foco{position:fixed;border-radius:14px;box-shadow:0 0 0 200vmax rgba(0,0,0,.66);outline:2px solid #d4ff3f;outline-offset:3px;pointer-events:none;
+  transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1),width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1)}
+.tour-cartao{position:fixed;left:50%;width:min(440px,calc(100vw - 32px));padding:20px 20px 16px;border-radius:16px;background:rgba(16,16,21,.98);
+  border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 50px rgba(0,0,0,.5);transform:translateX(-50%);transition:opacity .14s ease}
+.tour-cartao.meio{top:50%;transform:translate(-50%,-50%)}
+.tour-cartao.trocando{opacity:0}
+.tour-cartao h2{margin:2px 0 8px;font-size:19px;letter-spacing:-.01em}
+.tour-passo{margin:0;font-size:12px;font-weight:600;color:#d4ff3f;letter-spacing:.04em;text-transform:uppercase}
+.tour-texto{margin:0 0 16px;font-size:14px;line-height:1.55;opacity:.85}
+.tour-pontos{display:flex;gap:6px;margin-bottom:14px}
+.tour-pontos i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .2s,width .2s}
+.tour-pontos i.ativo{width:20px;border-radius:4px;background:#d4ff3f}
+.tour-botoes{display:flex;align-items:center;gap:8px}
+@media (prefers-reduced-motion:reduce){.tour-foco,.tour-cartao,.tour-pontos i{transition:none}}

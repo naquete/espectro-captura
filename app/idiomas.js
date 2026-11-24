@@ -146,6 +146,27 @@
     'Dê um nome ao perfil': ['Give the profile a name', 'Ponle un nombre al perfil'],
     'Nenhum perfil salvo': ['No saved profiles', 'Ningún perfil guardado'],
     'Atraso do som {0} ms': ['Audio delay {0} ms', 'Retraso del sonido {0} ms'],
+    // tutorial e código aberto
+    "Ver o tutorial": ["See the tutorial","Ver el tutorial"],
+    "O Espectro Captura é gratuito e tem código aberto (licença GNU GPL 3.0).": ["Espectro Captura is free and open source (GNU GPL 3.0 license).","Espectro Captura es gratuito y de código abierto (licencia GNU GPL 3.0)."],
+    "Ver o código": ["See the code","Ver el código"],
+    "Pular": ["Skip","Omitir"],
+    "Voltar": ["Back","Atrás"],
+    "Próximo": ["Next","Siguiente"],
+    "Começar": ["Start","Empezar"],
+    "Concluir": ["Done","Listo"],
+    "Passo {0} de {1}": ["Step {0} of {1}","Paso {0} de {1}"],
+    "Bem-vindo ao Espectro Captura": ["Welcome to Espectro Captura","Bienvenido a Espectro Captura"],
+    "Aqui você vê e ouve o seu console pela placa de captura, com volume próprio e sem precisar do OBS. Em um minuto eu mostro o principal. Antes de jogar, feche o programa da placa e o OBS: só um programa usa a placa por vez.": ["See and hear your console through the capture card, with its own volume and no OBS needed. In one minute you will see the main parts. Before playing, close the card's own app and OBS: only one program can use the card at a time.","Mira y escucha tu consola por la capturadora, con volumen propio y sin necesitar OBS. En un minuto te muestro lo principal. Antes de jugar, cierra el programa de la capturadora y OBS: solo un programa puede usarla a la vez."],
+    "Volume do jogo": ["Game volume","Volumen del juego"],
+    "Mude o volume só da placa, sem mexer no resto do Windows. Também funciona com as setas para cima e para baixo e com a roda do mouse. A tecla M deixa no mudo.": ["Change the volume of the card only, without touching the rest of Windows. The up and down arrows and the mouse wheel work too. The M key mutes it.","Cambia el volumen solo de la capturadora, sin tocar el resto de Windows. También funcionan las flechas arriba y abajo y la rueda del ratón. La tecla M silencia."],
+    "Print, replay e gravação": ["Screenshot, replay and recording","Captura, repetición y grabación"],
+    "P tira um print, G começa e para a gravação em vídeo e R salva os últimos segundos do jogo. O replay precisa estar ligado em Ajustes > Gravar.": ["P takes a screenshot, G starts and stops video recording and R saves the last seconds of the game. Replay must be turned on in Settings > Record.","P toma una captura, G empieza y detiene la grabación de video y R guarda los últimos segundos del juego. La repetición debe estar activada en Ajustes > Grabar."],
+    "Em Placa você escolhe a placa e a qualidade. Em Imagem deixa a cor e a nitidez do seu jeito. Em Som ajusta o atraso, o equalizador e o estéreo. Em Programa ficam o idioma, os perfis de cada jogo e a atualização.": ["In Card you pick the card and the quality. In Picture you set color and sharpness your way. In Sound you adjust delay, equalizer and stereo. App holds the language, a profile for each game and updates.","En Capturadora eliges la capturadora y la calidad. En Imagen ajustas el color y la nitidez a tu gusto. En Sonido ajustas el retraso, el ecualizador y el estéreo. En Programa están el idioma, los perfiles de cada juego y la actualización."],
+    "Tela cheia": ["Full screen","Pantalla completa"],
+    "Clique aqui, aperte F ou dê dois cliques na imagem. A barra some sozinha quando o mouse fica parado; é só mexer que ela volta.": ["Click here, press F or double-click the picture. The bar hides by itself when the mouse stops; move it and the bar comes back.","Haz clic aquí, pulsa F o haz doble clic en la imagen. La barra se oculta sola cuando el ratón se queda quieto; muévelo y vuelve."],
+    "Tudo pronto": ["All set","Todo listo"],
+    "Bom jogo! Para ver este tutorial de novo, abra Ajustes > Programa > Ver o tutorial.": ["Have a good game! To see this tutorial again, open Settings > App > See the tutorial.","¡Buen juego! Para ver este tutorial de nuevo, abre Ajustes > Programa > Ver el tutorial."],
   };
   var idioma = 'pt';
   function t(texto) {

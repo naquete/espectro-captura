@@ -576,6 +576,13 @@
     else if (nome === 'tela-cheia') alternarTelaCheia();
   }
   document.addEventListener('keydown', function (e) {
+    if (tourAberto()) {
+      if (e.key === 'Escape') fecharTour();
+      else if (e.key === 'ArrowRight') { $('tour-proximo').click(); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft') { if (tour.passo > 0) mostrarPasso(tour.passo - 1); e.preventDefault(); }
+      else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
+      return;
+    }
     // digitando no formulário: as letras não podem virar atalho
     if (e.target && /^(SELECT|INPUT|TEXTAREA)$/.test(e.target.tagName) && e.target.type !== 'range' && e.target.type !== 'checkbox') return;
     if (e.ctrlKey || e.altKey || e.metaKey) return;
@@ -590,7 +597,7 @@
     else if (e.key === 'Escape') { $('painel').hidden = true; $('relato').hidden = true; }
   });
   window.addEventListener('wheel', function (e) {
-    if (!$('painel').hidden || !$('relato').hidden) return;
+    if (!$('painel').hidden || !$('relato').hidden || tourAberto()) return;
     mudarVolume(pref.volume + (e.deltaY < 0 ? 5 : -5), true);
   }, { passive: true });
 
@@ -599,7 +606,7 @@
   function acordar() {
     document.body.classList.remove('ocioso');
     clearTimeout(ocioso);
-    ocioso = setTimeout(function () { if (!barra.matches(':hover') && $('painel').hidden && $('relato').hidden) document.body.classList.add('ocioso'); }, 2500);
+    ocioso = setTimeout(function () { if (!barra.matches(':hover') && $('painel').hidden && $('relato').hidden && $('tour').hidden) document.body.classList.add('ocioso'); }, 2500);
   }
   ['mousemove', 'mousedown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, acordar); });
   acordar();
@@ -609,6 +616,71 @@
     clearTimeout(abrir.t); abrir.t = setTimeout(function () { if (!streamVideo || streamVideo.getVideoTracks()[0].readyState === 'ended') abrir(); }, 800);
   });
 
+  // ---------------------------------------------------------------- tutorial (primeira vez e Ajustes > Programa)
+  var PASSOS = [
+    { titulo: 'Bem-vindo ao Espectro Captura', texto: 'Aqui você vê e ouve o seu console pela placa de captura, com volume próprio e sem precisar do OBS. Em um minuto eu mostro o principal. Antes de jogar, feche o programa da placa e o OBS: só um programa usa a placa por vez.' },
+    { alvos: ['mudo', 'volume', 'volume-num'], titulo: 'Volume do jogo', texto: 'Mude o volume só da placa, sem mexer no resto do Windows. Também funciona com as setas para cima e para baixo e com a roda do mouse. A tecla M deixa no mudo.' },
+    { alvos: ['b-print', 'b-replay', 'b-gravar'], titulo: 'Print, replay e gravação', texto: 'P tira um print, G começa e para a gravação em vídeo e R salva os últimos segundos do jogo. O replay precisa estar ligado em Ajustes > Gravar.' },
+    { alvos: ['ajustes'], titulo: 'Ajustes', texto: 'Em Placa você escolhe a placa e a qualidade. Em Imagem deixa a cor e a nitidez do seu jeito. Em Som ajusta o atraso, o equalizador e o estéreo. Em Programa ficam o idioma, os perfis de cada jogo e a atualização.' },
+    { alvos: ['tela-cheia'], titulo: 'Tela cheia', texto: 'Clique aqui, aperte F ou dê dois cliques na imagem. A barra some sozinha quando o mouse fica parado; é só mexer que ela volta.' },
+    { titulo: 'Tudo pronto', texto: 'Bom jogo! Para ver este tutorial de novo, abra Ajustes > Programa > Ver o tutorial.' },
+  ];
+  var tour = { passo: 0 };
+  function tourAberto() { return !$('tour').hidden; }
+  function posicionarTour() {
+    var p = PASSOS[tour.passo], foco = $('tour-foco'), cartao = $('tour-cartao');
+    var rets = (p.alvos || []).map(function (id) { return $(id).getBoundingClientRect(); }).filter(function (r) { return r.width > 0; });
+    if (!rets.length) {
+      foco.hidden = true; $('tour-fundo').hidden = false;
+      cartao.classList.add('meio'); cartao.style.bottom = '';
+      return;
+    }
+    var esq = Math.min.apply(null, rets.map(function (r) { return r.left; })), topo = Math.min.apply(null, rets.map(function (r) { return r.top; }));
+    var dir = Math.max.apply(null, rets.map(function (r) { return r.right; })), baixo = Math.max.apply(null, rets.map(function (r) { return r.bottom; }));
+    var m = 6;
+    foco.style.left = (esq - m) + 'px'; foco.style.top = (topo - m) + 'px';
+    foco.style.width = (dir - esq + m * 2) + 'px'; foco.style.height = (baixo - topo + m * 2) + 'px';
+    foco.hidden = false; $('tour-fundo').hidden = true;
+    cartao.classList.remove('meio');
+    cartao.style.bottom = Math.max(16, window.innerHeight - topo + 22) + 'px';
+  }
+  function mostrarPasso(n) {
+    tour.passo = Math.max(0, Math.min(PASSOS.length - 1, n));
+    var p = PASSOS[tour.passo], ultimo = tour.passo === PASSOS.length - 1, cartao = $('tour-cartao');
+    var espera = cartao.dataset.visto ? 140 : 0;
+    cartao.dataset.visto = '1';
+    cartao.classList.add('trocando');
+    setTimeout(function () {
+      $('tour-passo').textContent = t('Passo {0} de {1}', tour.passo + 1, PASSOS.length);
+      $('tour-titulo').textContent = t(p.titulo);
+      $('tour-texto').textContent = t(p.texto);
+      $('tour-pontos').innerHTML = PASSOS.map(function (_x, i) { return '<i' + (i === tour.passo ? ' class="ativo"' : '') + '></i>'; }).join('');
+      $('tour-voltar').hidden = tour.passo === 0;
+      $('tour-pular').hidden = ultimo;
+      $('tour-proximo').textContent = tour.passo === 0 ? t('Começar') : ultimo ? t('Concluir') : t('Próximo');
+      posicionarTour();
+      cartao.classList.remove('trocando');
+      $('tour-proximo').focus();
+    }, espera);
+  }
+  function abrirTour() {
+    $('painel').hidden = true; $('relato').hidden = true;
+    document.body.classList.remove('ocioso');
+    $('tour').hidden = false; $('tour-cartao').dataset.visto = '';
+    mostrarPasso(0);
+  }
+  function fecharTour() {
+    $('tour').hidden = true;
+    if (!pref.tutorialVisto) { pref.tutorialVisto = true; guardar(); }
+    acordar();
+  }
+  $('tour-proximo').addEventListener('click', function () { if (tour.passo === PASSOS.length - 1) fecharTour(); else mostrarPasso(tour.passo + 1); });
+  $('tour-voltar').addEventListener('click', function () { mostrarPasso(tour.passo - 1); });
+  $('tour-pular').addEventListener('click', fecharTour);
+  $('ver-tutorial').addEventListener('click', abrirTour);
+  $('ver-codigo').addEventListener('click', function () { if (window.espectro && window.espectro.abrirCodigo) window.espectro.abrirCodigo(); });
+  window.addEventListener('resize', function () { if (tourAberto()) posicionarTour(); });
+
   // ponte para gravacao.js (print, replay e vídeo)
   window.EC = {
     t: t, pref: pref, guardar: guardar, osd: mostrarOsd, video: video,
@@ -616,6 +688,7 @@
     trilhaAudio: function () { return streamAudio && streamAudio.getAudioTracks()[0]; },
     estadoStream: function () { return stream.ctx ? { estado: stream.ctx.state, saida: stream.ctx.sinkId, atrasoMs: Math.round(stream.atraso.delayTime.value * 1000) } : null; },
     filtro: function () { return filtroDaImagem(false); },
+    tutorial: abrirTour,
   };
 
   $('sel-idioma').value = pref.idioma;
@@ -623,4 +696,5 @@
   aplicarVolume(); aplicarSom(); aplicarImagem(); aplicarFps(); aplicarPerfis();
   aplicarJanela(true);
   abrir();
+  if (!pref.tutorialVisto) setTimeout(abrirTour, 600);
 })();

@@ -20,4 +20,5 @@ contextBridge.exposeInMainWorld('espectro', {
   aoAtalho: (fn) => { ipcRenderer.on('atalho', (_e, nome) => fn(nome)); },
   aoFecharPedido: (fn) => { ipcRenderer.on('fechar-pedido', () => fn()); },
   podeFechar: () => ipcRenderer.invoke('pode-fechar'),
+  abrirCodigo: () => ipcRenderer.invoke('abrir-codigo'),
 });

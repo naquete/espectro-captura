@@ -213,6 +213,11 @@
       <p id="estado-atualizacao" class="dica"></p>
     </div>
     <button id="abrir-relato" class="botao-borda botao-largo" type="button" data-t>Enviar sugestão ou relatar problema</button>
+    <button id="ver-tutorial" class="botao-borda botao-largo" type="button" data-t>Ver o tutorial</button>
+    <div class="bloco-aberto">
+      <p class="dica" data-t>O Espectro Captura é gratuito e tem código aberto (licença GNU GPL 3.0).</p>
+      <button id="ver-codigo" class="botao-borda" type="button" data-t>Ver o código</button>
+    </div>
     <p class="dica" data-t>Atalhos: M mudo · setas para cima e para baixo ou a roda do mouse mudam o volume · F ou duplo clique para tela cheia · P print · R replay · G gravar.</p>
   </section>
 
@@ -239,6 +244,24 @@
     <button id="relato-fechar" class="botao-borda" type="button" data-t>Fechar</button>
   </div>
 </aside>
+
+<!-- tutorial de boas-vindas: aparece na primeira vez e em Ajustes > Programa > Ver o tutorial -->
+<div id="tour" class="tour" hidden>
+  <div id="tour-fundo" class="tour-fundo"></div>
+  <div id="tour-foco" class="tour-foco" hidden></div>
+  <div id="tour-cartao" class="tour-cartao" role="dialog" aria-modal="true" aria-labelledby="tour-titulo" aria-describedby="tour-texto">
+    <p id="tour-passo" class="tour-passo"></p>
+    <h2 id="tour-titulo"></h2>
+    <p id="tour-texto" class="tour-texto"></p>
+    <div id="tour-pontos" class="tour-pontos" aria-hidden="true"></div>
+    <div class="tour-botoes">
+      <button id="tour-pular" class="botao-borda" type="button" data-t>Pular</button>
+      <span class="espaco"></span>
+      <button id="tour-voltar" class="botao-borda" type="button" data-t>Voltar</button>
+      <button id="tour-proximo" class="botao" type="button">Próximo</button>
+    </div>
+  </div>
+</div>
 
 <script src="idiomas.js"></script>
 <script src="app.js"></script>

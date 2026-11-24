@@ -67,4 +67,7 @@ arquivo na página antes do print (corpo de função assíncrona; o retorno sai 
 
 ## Licença
 
-© 2026 Espectro Soluções. Todos os direitos reservados. O Mediabunny, em `app/vendor/`, segue a licença MPL-2.0 dele.
+Código aberto sob a licença [GNU GPL 3.0 ou posterior](LICENSE). © 2026 Espectro Soluções.
+
+Você pode usar, estudar, mudar e redistribuir o programa. Quem distribuir uma versão modificada precisa entregar o
+código dela com a mesma licença. O Mediabunny, em `app/vendor/`, segue a licença MPL-2.0 dele.

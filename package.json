@@ -4,7 +4,7 @@
   "version": "1.1.4",
   "description": "Ver e ouvir qualquer placa de captura com controle de volume de verdade.",
   "author": "Espectro Soluções",
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-or-later",
   "private": true,
   "main": "main.js",
   "scripts": {

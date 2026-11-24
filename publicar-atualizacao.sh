@@ -4,7 +4,7 @@
 # Envia latest.yml, o instalador e o .blockmap para o servidor de atualizações (pasta servida em
 # https://espectrosolucoes.com.br/atualizacoes/espectro-captura/).
 # O servidor, o usuário e a chave SSH vêm de fora do repositório: variáveis ESPECTRO_VPS_HOST, ESPECTRO_VPS_USER,
-# ESPECTRO_VPS_CHAVE e ESPECTRO_KNOWN_HOSTS, ou o arquivo de ESPECTRO_VPS_ENV (padrão ~/.claude/segredos/espectro-vps.env).
+# ESPECTRO_VPS_CHAVE e ESPECTRO_KNOWN_HOSTS, ou um arquivo .env indicado em ESPECTRO_VPS_ENV (com HOST e USER).
 set -e
 D="$(cd "$(dirname "$0")" && pwd)"
 V="$(cd "$D" && node -p "require('./package.json').version")" # (com cd: o node do Windows não entende /c/...)
@@ -12,14 +12,14 @@ EXE="$D/dist/Espectro-Captura-Setup-$V.exe"
 [ -f "$EXE" ] && [ -f "$EXE.blockmap" ] && [ -f "$D/dist/latest.yml" ] || { echo "falta o instalador $V em dist/ (rode npm run instalador)"; exit 1; }
 grep -q "^version: $V$" "$D/dist/latest.yml" || { echo "latest.yml não é da versão $V"; exit 1; }
 
-ENVF="${ESPECTRO_VPS_ENV:-$HOME/.claude/segredos/espectro-vps.env}"
+ENVF="${ESPECTRO_VPS_ENV:-}"
 ler() { [ -f "$ENVF" ] && grep "^$1=" "$ENVF" | head -1 | cut -d= -f2- | tr -d '\r"'"'" || true; }
 HOST="${ESPECTRO_VPS_HOST:-$(ler ESPECTRO_VPS_HOST)}"
 USUARIO="${ESPECTRO_VPS_USER:-$(ler ESPECTRO_VPS_USER)}"
 CHAVE="${ESPECTRO_VPS_CHAVE:-$HOME/.ssh/espectro_vps}"
-CONHECIDOS="${ESPECTRO_KNOWN_HOSTS:-/c/repositorios/Espectro/espectro-solucoes/tools/known_hosts}"
-[ -n "$HOST" ] && [ -n "$USUARIO" ] || { echo "defina ESPECTRO_VPS_HOST e ESPECTRO_VPS_USER (ou o arquivo $ENVF)"; exit 1; }
-[ -f "$CONHECIDOS" ] || { echo "falta o known_hosts do servidor: $CONHECIDOS"; exit 1; }
+CONHECIDOS="${ESPECTRO_KNOWN_HOSTS:-}"
+[ -n "$HOST" ] && [ -n "$USUARIO" ] || { echo "defina ESPECTRO_VPS_HOST e ESPECTRO_VPS_USER (ou ESPECTRO_VPS_ENV com elas)"; exit 1; }
+[ -n "$CONHECIDOS" ] && [ -f "$CONHECIDOS" ] || { echo "defina ESPECTRO_KNOWN_HOSTS (arquivo known_hosts com a chave do servidor)"; exit 1; }
 SSH="-i $CHAVE -o IdentitiesOnly=yes -o UserKnownHostsFile=$CONHECIDOS -o StrictHostKeyChecking=yes -o BatchMode=yes"
 P=/opt/espectro-captura/public
 

@@ -27,5 +27,6 @@ P=/opt/espectro-captura/public
 scp $SSH "$EXE" "$EXE.blockmap" "$USUARIO@$HOST:$P/"
 scp $SSH "$D/dist/latest.yml" "$USUARIO@$HOST:$P/"
 # nome fixo para o botão "Baixar" da página espectrosolucoes.com.br/captura (sempre a versão mais nova)
-ssh $SSH "$USUARIO@$HOST" "cp -f '$P/Espectro-Captura-Setup-$V.exe' $P/Espectro-Captura-Setup.exe && chmod 644 $P/*"
+# só os arquivos: a pasta complementos/ (Suavizar movimento) precisa continuar 755, senão o servidor responde 403
+ssh $SSH "$USUARIO@$HOST" "cp -f '$P/Espectro-Captura-Setup-$V.exe' $P/Espectro-Captura-Setup.exe && find $P -maxdepth 1 -type f -exec chmod 644 {} +"
 echo "publicada a versão $V: $(curl -s https://espectrosolucoes.com.br/atualizacoes/espectro-captura/latest.yml | head -1)"

@@ -23,6 +23,8 @@ if (TESTE) {
   if (process.env.ESPECTRO_CAPTURA_TESTE_FALSO) {
     app.commandLine.appendSwitch('use-fake-device-for-media-stream');
     app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
+    // ESPECTRO_CAPTURA_TESTE_VIDEO=<arquivo.y4m>: a câmera falsa toca esse vídeo (ex.: jogo a 30 fps num sinal de 60 Hz)
+    if (process.env.ESPECTRO_CAPTURA_TESTE_VIDEO) app.commandLine.appendSwitch('use-file-for-fake-video-capture', process.env.ESPECTRO_CAPTURA_TESTE_VIDEO);
   }
 }
 

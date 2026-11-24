@@ -707,7 +707,8 @@
     if (s.modo === 'direto') return t('A imagem já chega a {0} fps: passa direto, sem quadros gerados.', s.fonteFps);
     if (s.modo === 'lento') return t('A placa de vídeo não deu conta ({0} ms por quadro): mostrando sem quadros gerados.', s.iaMs);
     if (s.modo === 'erro') return t('A IA falhou neste quadro. Se repetir, desligue e ligue de novo.');
-    if (s.modo === 'iniciando') return t('Iniciando...');
+    if (s.modo === 'parado') return t('Imagem parada: os quadros gerados começam quando a imagem se mexer.');
+    if (s.modo === 'iniciando') return t('Iniciando... (jogo a {0} fps)', s.fonteFps);
     return t('Jogo a {0} fps, tela a {1} fps. IA: {2} ms por quadro.', s.fonteFps, s.saidaFps, s.iaMs);
   }
   function ligarSuave() {

@@ -11,17 +11,19 @@
 const BASE = 'complemento://suavizar-1/';
 const MW = 960, MH = 544; // resolução em que a IA calcula o movimento (múltiplos de 32)
 
+// conta quantos pontos mudaram (1 a cada 4 pixels em cada direção): quadro repetido da placa é idêntico (dá 0);
+// a média da tela inteira escondia movimento pequeno ou lento e descartava quadro de verdade
 const WGSL_DIFERENCA = /* wgsl */`
 @group(0) @binding(0) var a: texture_2d<f32>;
 @group(0) @binding(1) var b: texture_2d<f32>;
 @group(0) @binding(2) var<storage, read_write> soma: array<atomic<u32>, 1>;
-@compute @workgroup_size(8, 8)
+@compute @workgroup_size(16, 16)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-  if (id.x >= 96u || id.y >= 54u) { return; }
   let tam = textureDimensions(a);
-  let p = vec2<u32>((id.x * 2u + 1u) * tam.x / 192u, (id.y * 2u + 1u) * tam.y / 108u);
+  let p = id.xy * 4u + 1u;
+  if (p.x >= tam.x || p.y >= tam.y) { return; }
   let d = abs(textureLoad(a, p, 0).rgb - textureLoad(b, p, 0).rgb);
-  atomicAdd(&soma[0], u32((d.r + d.g + d.b) * 255.0));
+  if ((d.r + d.g + d.b) * 255.0 > 6.0) { atomicAdd(&soma[0], 1u); }
 }`;
 
 const WGSL_ENTRADA = /* wgsl */`
@@ -151,14 +153,14 @@ export async function criarSuavizador({ video, canvas, aoEstado }) {
     const pc = enc.beginComputePass();
     pc.setPipeline(pDif);
     pc.setBindGroup(0, device.createBindGroup({ layout: pDif.getBindGroupLayout(0), entries: [{ binding: 0, resource: quadros[i].createView() }, { binding: 1, resource: quadros[j].createView() }, { binding: 2, resource: { buffer: bufSoma } }] }));
-    pc.dispatchWorkgroups(12, 7); pc.end();
+    pc.dispatchWorkgroups(Math.ceil(W / 64), Math.ceil(H / 64)); pc.end();
     enc.copyBufferToBuffer(bufSoma, 0, bufLeitura, 0, 4);
     device.queue.submit([enc.finish()]);
     await bufLeitura.mapAsync(GPUMapMode.READ);
     const soma = new Uint32Array(bufLeitura.getMappedRange())[0];
     bufLeitura.unmap();
     lendoDif = false;
-    return soma / (96 * 54) > 1.5; // média por ponto (0 a 765): quadro repetido dá ~0
+    return soma >= 3; // pontos que mudaram: quadro repetido dá 0
   }
 
   async function gerarMeio(a, b) {
@@ -233,7 +235,8 @@ export async function criarSuavizador({ video, canvas, aoEstado }) {
     }
     if (agora - stats.desde >= 1000 && aoEstado) {
       const s = (agora - stats.desde) / 1000;
-      aoEstado({ modo: stats.modo, fonteFps: Math.round(stats.unicos / s), saidaFps: Math.round(stats.mostrados / s), iaMs: Math.round(stats.iaMs * 10) / 10 });
+      // nenhum quadro diferente no último segundo: imagem parada (menu, pausa) ou placa sem sinal
+      aoEstado({ modo: stats.unicos === 0 && stats.modo !== 'erro' ? 'parado' : stats.modo, fonteFps: Math.round(stats.unicos / s), saidaFps: Math.round(stats.mostrados / s), iaMs: Math.round(stats.iaMs * 10) / 10 });
       stats.unicos = 0; stats.gerados = 0; stats.mostrados = 0; stats.desde = agora;
     }
   }

@@ -168,6 +168,8 @@
     "Tudo pronto": ["All set","Todo listo"],
     "Bom jogo! Para ver este tutorial de novo, abra Ajustes > Programa > Ver o tutorial.": ["Have a good game! To see this tutorial again, open Settings > App > See the tutorial.","¡Buen juego! Para ver este tutorial de nuevo, abre Ajustes > Programa > Ver el tutorial."],
     // Suavizar movimento (1.2.0)
+    "Imagem parada: os quadros gerados começam quando a imagem se mexer.": ["Picture is still: generated frames start when the picture moves.","Imagen quieta: los cuadros generados empiezan cuando la imagen se mueva."],
+    "Iniciando... (jogo a {0} fps)": ["Starting... (game at {0} fps)","Iniciando... (juego a {0} fps)"],
     "Suavizar movimento (experimental)": ["Smooth motion (experimental)","Suavizar movimiento (experimental)"],
     "Gera um quadro novo entre cada dois quadros do jogo com uma IA na placa de vídeo: 30 fps viram 60. Deixa o movimento mais fluido, mas soma uns 35 ms de atraso nos comandos. Precisa de placa de vídeo recente (RTX 30, 40, 50 ou AMD equivalente).": ["Creates a new frame between every two game frames with an AI on your graphics card: 30 fps become 60. Motion gets smoother, but it adds about 35 ms of input lag. Needs a recent graphics card (RTX 30, 40, 50 or an AMD equivalent).","Crea un cuadro nuevo entre cada dos cuadros del juego con una IA en la tarjeta de video: 30 fps se vuelven 60. El movimiento queda más fluido, pero suma unos 35 ms de retraso en los controles. Necesita una tarjeta de video reciente (RTX 30, 40, 50 o AMD equivalente)."],
     "Ligar o Suavizar movimento": ["Turn on Smooth motion","Activar Suavizar movimiento"],

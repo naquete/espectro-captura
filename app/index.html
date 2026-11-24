@@ -129,18 +129,38 @@
 
     <p class="dica" data-t>O HDR de verdade se liga no console e na placa. Quando o console manda HDR e a placa não converte, a imagem fica lavada: use "Corrigir HDR lavado" ou o Realce HDR. A nitidez pode pesar em PC mais fraco.</p>
 
+    <p class="sub-titulo" data-t>Melhorar imagem (FSR 1 da AMD)</p>
+    <label class="marcar"><input id="fsr-ligado" type="checkbox"><span data-t>Aumentar a resolução e dar nitidez (FSR 1)</span></label>
+    <label class="faixa-ajuste"><span data-t>Nitidez do FSR</span> <output id="out-fsr-nitidez">75%</output><input id="fsr-nitidez" type="range" min="0" max="100" step="5"></label>
+    <p class="dica" data-t>Funciona em qualquer placa de vídeo e não precisa baixar nada. Ajuda quando a imagem da placa é menor que a tela (ex.: 1080p numa TV 4K); numa tela do mesmo tamanho, só dá nitidez.</p>
+
     <p class="sub-titulo" data-t>Suavizar movimento (experimental)</p>
-    <p class="dica" data-t>Gera um quadro novo entre cada dois quadros do jogo com uma IA na placa de vídeo: 30 fps viram 60. Deixa o movimento mais fluido, mas soma uns 35 ms de atraso nos comandos. Precisa de placa de vídeo recente (RTX 30, 40, 50 ou AMD equivalente).</p>
+    <p class="dica" data-t>Gera quadros novos entre os quadros do jogo com uma IA na placa de vídeo, até chegar na meta de fps: 30 fps viram 60, e se o jogo cair para 20 ou 15, a IA completa a diferença. Deixa o movimento mais fluido, mas soma uns 35 ms de atraso nos comandos. Precisa de placa de vídeo recente (RTX 30, 40, 50 ou AMD equivalente).</p>
     <div id="suave-baixar" hidden>
       <button id="suave-baixar-botao" class="botao botao-largo" type="button">Baixar o complemento</button>
       <p id="suave-progresso" class="dica" role="status"></p>
     </div>
     <div id="suave-pronto" hidden>
       <label class="marcar"><input id="suave-ligado" type="checkbox"><span data-t>Ligar o Suavizar movimento</span></label>
+      <label><span data-t>Meta de quadros por segundo</span>
+        <select id="suave-alvo">
+          <option value="60" data-t>60 fps</option>
+          <option value="90" data-t>90 fps (telas de 90, 180 Hz)</option>
+          <option value="120" data-t>120 fps (telas de 120, 240 Hz)</option>
+        </select>
+      </label>
+      <label><span data-t>Qualidade da IA</span>
+        <select id="suave-qualidade">
+          <option value="rapido" data-t>Rápida (gera mais quadros)</option>
+          <option value="qualidade" data-t>Melhor (menos borrão, gera menos quadros)</option>
+        </select>
+      </label>
+      <label class="marcar"><input id="suave-proteger" type="checkbox"><span data-t>Proteger legenda e HUD (o que não se mexe fica igual ao original)</span></label>
       <p id="suave-estado" class="dica" role="status"></p>
       <button id="suave-remover" class="botao-borda" type="button" data-t>Remover o complemento</button>
     </div>
     <p class="dica" data-t>O complemento não vem no instalador: só baixa se você quiser. Usa a IA RIFE (licença MIT) e o ONNX Runtime (licença MIT).</p>
+    <p id="motor-estado" class="dica" role="status"></p>
   </section>
 
   <section class="sec-aba" data-sec="som" hidden>

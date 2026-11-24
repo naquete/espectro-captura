@@ -39,7 +39,8 @@
     som: { atraso: 0, eq: 'normal', grave: 0, medio: 0, agudo: 0, noturno: false, balanco: 0, mono: false, estabilidade: 'equilibrado', amplitude: 100 },
     gravar: { replay: false, duracao: 30 },
     stream: { ligado: false, saida: '' },
-    suavizar: { ligado: false },
+    suavizar: { ligado: false, alvo: 60, qualidade: 'rapido', proteger: true },
+    fsr: { ligado: false, nitidez: 75 },
     janela: { topo: false, telaCheia: false, windows: false, atalhosGlobais: true },
     perfis: {},
   };
@@ -688,63 +689,99 @@
   $('ver-codigo').addEventListener('click', function () { if (window.espectro && window.espectro.abrirCodigo) window.espectro.abrirCodigo(); });
   window.addEventListener('resize', function () { if (tourAberto()) posicionarTour(); });
 
-  // ---------------------------------------------------------------- Suavizar movimento (complemento baixado à parte)
+  // ---------------------------------------------------------------- motor de imagem: FSR 1 e Suavizar movimento
+  // O FSR 1 é só shader (não precisa de complemento); o Suavizar movimento usa a IA do complemento baixado à parte.
   var COMPLEMENTO = 'suavizar-1';
   var atrasoSuave = 0;
-  var suave = { motor: null, canvas: null, ligando: false };
+  var suave = { motor: null, canvas: null, ligando: false, instalado: false, vez: 0 };
   function mb(bytes) { return Math.round(bytes / 1048576); }
   function mostrarComplemento(e) {
-    var instalado = e && e.instalado;
-    $('suave-baixar').hidden = Boolean(instalado); $('suave-pronto').hidden = !instalado;
-    if (!instalado && e) $('suave-baixar-botao').textContent = e.baixando ? t('Baixando...') : t('Baixar o complemento ({0} MB)', mb(e.totalBytes || 0));
+    suave.instalado = Boolean(e && e.instalado);
+    $('suave-baixar').hidden = suave.instalado; $('suave-pronto').hidden = !suave.instalado;
+    if (!suave.instalado && e) $('suave-baixar-botao').textContent = e.baixando ? t('Baixando...') : t('Baixar o complemento ({0} MB)', mb(e.totalBytes || 0));
     $('suave-baixar-botao').disabled = Boolean(e && e.baixando);
   }
   function conferirComplemento() {
     if (!window.espectro || !window.espectro.complementoEstado) { $('suave-baixar').hidden = true; $('suave-pronto').hidden = true; return Promise.resolve(null); }
     return window.espectro.complementoEstado(COMPLEMENTO).then(function (e) { mostrarComplemento(e); return e; });
   }
-  function textoEstadoSuave(s) {
-    if (s.modo === 'direto') return t('A imagem já chega a {0} fps: passa direto, sem quadros gerados.', s.fonteFps);
-    if (s.modo === 'lento') return t('A placa de vídeo não deu conta ({0} ms por quadro): mostrando sem quadros gerados.', s.iaMs);
-    if (s.modo === 'erro') return t('A IA falhou neste quadro. Se repetir, desligue e ligue de novo.');
-    if (s.modo === 'parado') return t('Imagem parada: os quadros gerados começam quando a imagem se mexer.');
-    if (s.modo === 'iniciando') return t('Iniciando... (jogo a {0} fps)', s.fonteFps);
-    return t('Jogo a {0} fps, tela a {1} fps. IA: {2} ms por quadro.', s.fonteFps, s.saidaFps, s.iaMs);
+  function textoEstadoMotor(s) {
+    var fsrTxt = s.fsr ? t('FSR 1: {0} para {1}.', s.entrada, s.saida) : '';
+    if (!s.gerar) return fsrTxt;
+    var txt;
+    if (s.modo === 'parado') txt = t('Imagem parada: os quadros gerados começam quando a imagem se mexer.');
+    else if (s.modo === 'direto') txt = t('A imagem já chega a {0} fps: passa direto, sem quadros gerados.', s.fonteFps);
+    else if (s.modo === 'lento') txt = t('A placa de vídeo não deu conta ({0} ms por quadro): mostrando sem quadros gerados.', s.iaMs);
+    else if (s.modo === 'erro') txt = t('A IA falhou neste quadro. Se repetir, desligue e ligue de novo.');
+    else if (s.modo === 'iniciando') txt = t('Iniciando... (jogo a {0} fps)', s.fonteFps);
+    else txt = t('Jogo a {0} fps, tela a {1} fps (meta {2}). IA: {3} ms por quadro.', s.fonteFps, s.saidaFps, s.alvo, s.iaMs);
+    return fsrTxt ? txt + ' ' + fsrTxt : txt;
   }
-  function ligarSuave() {
-    if (suave.motor || suave.ligando) return;
-    suave.ligando = true;
-    $('suave-estado').textContent = t('Carregando a IA na placa de vídeo...');
-    var tela = document.createElement('canvas');
-    tela.id = 'suave';
-    $('palco').appendChild(tela);
-    suave.canvas = tela; copiarJeitoDoVideo();
-    import('./suavizar.js').then(function (mod) {
-      return mod.criarSuavizador({ video: video, canvas: tela, aoEstado: function (s) { $('suave-estado').textContent = textoEstadoSuave(s); } });
-    }).then(function (motor) {
-      suave.motor = motor; suave.ligando = false;
-      atrasoSuave = 35; aplicarSom();
-      mostrarOsd(t('Suavizar movimento ligado'));
-    }).catch(function (e) {
-      console.error('suavizar', e);
-      suave.ligando = false; tela.remove(); suave.canvas = null;
-      pref.suavizar.ligado = false; $('suave-ligado').checked = false; guardar();
-      $('suave-estado').textContent = String(e && e.message) === 'sem-webgpu'
-        ? t('Este PC não tem WebGPU (placa de vídeo ou driver antigo): o Suavizar movimento não funciona aqui.')
-        : t('Não deu para carregar a IA: {0}', String(e && e.message || e).slice(0, 160));
-    });
-  }
-  function desligarSuave() {
+  function pararMotor() {
     if (suave.motor) suave.motor.parar();
     suave.motor = null;
     if (suave.canvas) suave.canvas.remove();
     suave.canvas = null;
     if (atrasoSuave) { atrasoSuave = 0; aplicarSom(); }
-    $('suave-estado').textContent = '';
+    $('suave-estado').textContent = ''; $('motor-estado').textContent = '';
+  }
+  // liga, troca ou desliga o motor conforme os ajustes (cada mudança recria o motor; a nitidez muda na hora)
+  function aplicarMotor() {
+    var gerar = Boolean(pref.suavizar.ligado && suave.instalado);
+    var fsr = Boolean(pref.fsr.ligado);
+    var vez = ++suave.vez;
+    pararMotor();
+    if (!gerar && !fsr) return;
+    suave.ligando = true;
+    var onde = gerar ? $('suave-estado') : $('motor-estado');
+    onde.textContent = gerar ? t('Carregando a IA na placa de vídeo...') : t('Ligando o FSR 1...');
+    var tela = document.createElement('canvas');
+    tela.id = 'suave';
+    $('palco').appendChild(tela);
+    suave.canvas = tela; copiarJeitoDoVideo();
+    import('./suavizar.js').then(function (mod) {
+      return mod.criarMotor({
+        video: video, canvas: tela,
+        opcoes: { gerar: gerar, alvo: pref.suavizar.alvo, qualidade: pref.suavizar.qualidade, proteger: pref.suavizar.proteger !== false, fsr: fsr, nitidez: pref.fsr.nitidez },
+        aoEstado: function (s) { (s.gerar ? $('suave-estado') : $('motor-estado')).textContent = textoEstadoMotor(s); },
+      });
+    }).then(function (motor) {
+      if (vez !== suave.vez) { motor.parar(); return; }
+      suave.motor = motor; suave.ligando = false;
+      atrasoSuave = gerar ? 35 : 0; aplicarSom();
+    }).catch(function (e) {
+      console.error('motor de imagem', e);
+      if (vez !== suave.vez) return;
+      suave.ligando = false; tela.remove(); suave.canvas = null;
+      onde.textContent = String(e && e.message) === 'sem-webgpu'
+        ? t('Este PC não tem WebGPU (placa de vídeo ou driver antigo): esta opção não funciona aqui.')
+        : t('Não deu para ligar: {0}', String(e && e.message || e).slice(0, 160));
+      if (gerar) { pref.suavizar.ligado = false; $('suave-ligado').checked = false; } else { pref.fsr.ligado = false; $('fsr-ligado').checked = false; }
+      guardar();
+    });
+  }
+  function mostrarAjustesMotor() {
+    $('suave-ligado').checked = Boolean(pref.suavizar.ligado);
+    $('suave-alvo').value = String(pref.suavizar.alvo || 60);
+    $('suave-qualidade').value = pref.suavizar.qualidade === 'qualidade' ? 'qualidade' : 'rapido';
+    $('suave-proteger').checked = pref.suavizar.proteger !== false;
+    $('fsr-ligado').checked = Boolean(pref.fsr.ligado);
+    $('fsr-nitidez').value = String(pref.fsr.nitidez); $('out-fsr-nitidez').textContent = pref.fsr.nitidez + '%';
   }
   $('suave-ligado').addEventListener('change', function (e) {
-    pref.suavizar.ligado = e.target.checked; guardar();
-    if (e.target.checked) ligarSuave(); else { desligarSuave(); mostrarOsd(t('Suavizar movimento desligado')); }
+    pref.suavizar.ligado = e.target.checked; guardar(); aplicarMotor();
+    mostrarOsd(e.target.checked ? t('Suavizar movimento ligado') : t('Suavizar movimento desligado'));
+  });
+  $('suave-alvo').addEventListener('change', function (e) { pref.suavizar.alvo = Number(e.target.value); guardar(); if (pref.suavizar.ligado) aplicarMotor(); });
+  $('suave-qualidade').addEventListener('change', function (e) { pref.suavizar.qualidade = e.target.value; guardar(); if (pref.suavizar.ligado) aplicarMotor(); });
+  $('suave-proteger').addEventListener('change', function (e) { pref.suavizar.proteger = e.target.checked; guardar(); if (pref.suavizar.ligado) aplicarMotor(); });
+  $('fsr-ligado').addEventListener('change', function (e) {
+    pref.fsr.ligado = e.target.checked; guardar(); aplicarMotor();
+    mostrarOsd(e.target.checked ? t('FSR 1 ligado') : t('FSR 1 desligado'));
+  });
+  $('fsr-nitidez').addEventListener('input', function (e) {
+    pref.fsr.nitidez = Number(e.target.value); $('out-fsr-nitidez').textContent = pref.fsr.nitidez + '%'; guardar();
+    if (suave.motor) suave.motor.nitidez(pref.fsr.nitidez);
   });
   $('suave-baixar-botao').addEventListener('click', function () {
     $('suave-baixar-botao').disabled = true; $('suave-baixar-botao').textContent = t('Baixando...');
@@ -755,8 +792,9 @@
     });
   });
   $('suave-remover').addEventListener('click', function () {
-    desligarSuave(); pref.suavizar.ligado = false; $('suave-ligado').checked = false; guardar();
-    window.espectro.complementoRemover(COMPLEMENTO).then(conferirComplemento);
+    pref.suavizar.ligado = false; guardar();
+    suave.instalado = false; aplicarMotor();
+    window.espectro.complementoRemover(COMPLEMENTO).then(function () { conferirComplemento().then(mostrarAjustesMotor); });
   });
   if (window.espectro && window.espectro.aoComplemento) window.espectro.aoComplemento(function (e) {
     if (e.id !== COMPLEMENTO) return;
@@ -780,7 +818,7 @@
   aplicarVolume(); aplicarSom(); aplicarImagem(); aplicarFps(); aplicarPerfis();
   aplicarJanela(true);
   abrir();
-  $('suave-ligado').checked = Boolean(pref.suavizar.ligado);
-  conferirComplemento().then(function (e) { if (e && e.instalado && pref.suavizar.ligado) ligarSuave(); });
+  mostrarAjustesMotor();
+  conferirComplemento().then(function () { if ((pref.suavizar.ligado && suave.instalado) || pref.fsr.ligado) aplicarMotor(); });
   if (!pref.tutorialVisto) setTimeout(abrirTour, 600);
 })();

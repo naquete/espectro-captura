@@ -17,8 +17,10 @@ Portuguese and Spanish.*
 - **Som:** volume de 0 a 200%, saída escolhida, estabilidade do som (latência), atraso do som, equalizador com estilos
   prontos, modo noturno, ampliar estéreo, balanço e mono.
 - **Imagem:** brilho, contraste, saturação, tom, nitidez, Realce HDR, modo retrô (pixels nítidos), efeito de TV de tubo
-  e espelhar. **Suavizar movimento (experimental):** uma IA na placa de vídeo gera o quadro do meio (30 fps viram 60),
-  com um complemento que só baixa se a pessoa quiser.
+  e espelhar. **FSR 1 (AMD):** aumenta a resolução até a tela e dá nitidez, em qualquer placa de vídeo.
+  **Suavizar movimento (experimental):** uma IA na placa de vídeo gera quadros até a meta de fps (60, 90 ou 120; se o
+  jogo cair para 15, ela completa a diferença), com proteção de legenda e HUD e um complemento que só baixa se a pessoa
+  quiser.
 - **Gravar:** print (P), replay dos últimos 15 segundos a 5 minutos (R) e gravação em MP4 (G), em Imagens e Vídeos.
 - **Programa:** português, inglês e espanhol; sempre por cima; abrir em tela cheia; abrir com o Windows; ícone perto do
   relógio; atalhos globais (Ctrl+Alt+tecla); perfis; atualização só com clique; relato de problema e sugestão de dentro
@@ -41,7 +43,7 @@ mono, volume). Gravação com WebCodecs (H.264 na placa de vídeo e AAC) e o MP4
 | `app/app.js` | placa, som, imagem, ajustes, perfis |
 | `app/gravacao.js` | print, replay e gravação |
 | `app/idiomas.js` | textos em inglês e espanhol |
-| `app/suavizar.js` | Suavizar movimento: descarta quadro repetido, roda a IA e monta o quadro do meio (WebGPU) |
+| `app/suavizar.js` | motor de imagem (WebGPU): FSR 1 (EASU e RCAS traduzidos de `ffx_fsr1.h`, AMD, MIT) e Suavizar movimento (descarta quadro repetido, roda a IA, monta os quadros gerados) |
 | `complementos.js` | complemento baixado à parte: download conferido por SHA-256 e o endereço privado `complemento://` |
 
 ## Complemento: Suavizar movimento
@@ -54,9 +56,12 @@ SHA-256 bater com o de `complementos.js`. Fica na pasta de dados do programa e s
   de mistura em vez da imagem pronta. A IA calcula o movimento em 960x544 (13 a 16 ms numa RTX 5070) e o quadro do meio
   é montado em resolução cheia pela placa de vídeo.
 - **Motor:** [ONNX Runtime Web](https://onnxruntime.ai) 1.31.1 (MIT) com WebGPU.
-- **Ritmo:** quadro repetido (o PS5 manda 30 fps num sinal de 60 Hz) é descartado; o quadro gerado aparece assim que fica
-  pronto e o real meio período depois. Fonte com mais de ~45 quadros diferentes por segundo passa direto. O som ganha
-  35 ms de atraso para continuar junto da imagem.
+- **Ritmo:** quadro repetido (o PS5 manda 30 fps num sinal de 60 Hz) é descartado. Para cada par, o motor mede o
+  intervalo real e gera os quadros que faltam até a meta (30 fps: 1 para 60; 15 fps: 3), até onde a placa de vídeo
+  dá conta no intervalo; cada um aparece assim que fica pronto e o quadro real em seguida. Quadro que chega durante a
+  geração espera a vez. Fonte já na meta passa direto; mais de meio segundo parado conta como pausa. O som ganha 35 ms
+  de atraso para continuar junto da imagem.
+- **Legenda e HUD:** onde o pixel é igual nos dois quadros reais, o gerado copia o original em vez do que a IA arrastou.
 - O LEIA-ME do complemento traz as licenças.
 - Teste: `ESPECTRO_CAPTURA_TESTE_FORA=1` abre a janela de teste fora da tela, sem pegar o foco (escondida, o Windows
   quase para de desenhar e o ritmo não dá para medir); `window.EC.suavizarAmostra()` devolve o último par e o quadro
